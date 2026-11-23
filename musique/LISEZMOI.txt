@@ -1,0 +1,4 @@
+Dossier des MP3 (optionnel), à mettre sur le serveur à côté de index.html.
+Chaque MP3 porte le même nom que son fichier de paroles, avec .mp3 au lieu de .txt.
+Exemple : paroles/les-lacs-du-connemara.txt  ->  musique/les-lacs-du-connemara.mp3
+Vous pouvez aussi garder les MP3 sur l'ordinateur et utiliser « 📁 Charger les musiques ».

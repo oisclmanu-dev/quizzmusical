@@ -1,0 +1,1955 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quiz musical v2 — Animateur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --fond: #090816; --panneau: #12102a; --panneau2: #1a1738; --bord: #2a2652; --texte: #f2f1ff; --doux: #a9a6d6;
+  --accent: #ff4fa3; --accent2: #7c5cff; --ok: #22d36b; --ko: #ff4d5e; --or: #ffcf3a;
+  --titre: "Fredoka", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; color: var(--texte); overflow: hidden;
+  background: radial-gradient(ellipse at 50% -10%, #2a1d6b 0%, #120f33 35%, var(--fond) 70%);
+  display: grid; grid-template-columns: 220px 1fr 280px; grid-template-rows: auto 1fr;
+  grid-template-areas: "barre barre barre" "cat scene scores";
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+kbd { font-size: 11px; background: rgba(255,255,255,.12); border-radius: 4px; padding: 1px 5px; margin-left: 4px; font-family: inherit; opacity: .8; }
+.btn { background: var(--panneau2); border: 1px solid var(--bord); border-radius: 10px; padding: 8px 12px; font-size: 14px; white-space: nowrap; }
+.btn:hover { border-color: #4a448a; background: #221e48; }
+.btn.plein { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: 0; font-weight: 700; }
+.btn.vert { background: var(--ok); color: #04210f; border: 0; font-weight: 800; }
+.btn.rouge { background: var(--ko); color: #fff; border: 0; font-weight: 800; }
+.btn.gros { font-size: 18px; padding: 13px 22px; border-radius: 14px; font-weight: 700; }
+.btn:disabled { opacity: .4; cursor: default; }
+
+/* ---------- Barre du haut : lumières des équipes ---------- */
+#barre { grid-area: barre; display: flex; align-items: center; gap: 18px; padding: 10px 18px; border-bottom: 1px solid var(--bord); background: rgba(9,8,22,.6); }
+#logo { font-family: var(--titre); font-size: 22px; font-weight: 700; white-space: nowrap;
+  background: linear-gradient(90deg, #ff7ac0, #9d8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#lumieres { flex: 1; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.lampe { --c: #888; position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 96px; padding: 6px 10px; border-radius: 14px; transition: .2s; }
+.lampe .bulbe { width: 50px; height: 50px; border-radius: 50%; background: var(--c); filter: saturate(.35) brightness(.38); transition: .15s;
+  box-shadow: inset 0 -8px 14px rgba(0,0,0,.45), inset 0 6px 10px rgba(255,255,255,.15); }
+.lampe .nom { font-family: var(--titre); font-weight: 600; font-size: 15px; color: var(--doux); }
+.lampe .tel { position: absolute; top: 0; left: 4px; font-size: 11px; color: var(--doux); }
+.lampe.allumee .bulbe { filter: none; box-shadow: 0 0 20px var(--c), 0 0 55px var(--c), inset 0 -8px 14px rgba(0,0,0,.2), inset 0 6px 10px rgba(255,255,255,.4); }
+.lampe.allumee .nom { color: var(--texte); }
+.lampe.premiere { background: color-mix(in srgb, var(--c) 18%, transparent); }
+.lampe.premiere .bulbe { animation: clignote .45s ease-in-out infinite alternate; }
+.lampe .rang { position: absolute; top: -2px; right: 10px; background: #fff; color: #000; border-radius: 999px; font-size: 12px; font-weight: 800; padding: 1px 7px; }
+.lampe.exclue { opacity: .35; } .lampe.exclue .nom { text-decoration: line-through; }
+@keyframes clignote { from { transform: scale(1); } to { transform: scale(1.14); } }
+#actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 470px; }
+#etat-buzz.ferme { background: #3a1420; border-color: #7a2a3a; }
+#reseau { font-size: 12px; color: var(--doux); white-space: nowrap; }
+#reseau b { color: var(--ok); } #reseau.ko b { color: var(--ko); }
+
+/* ---------- Catégories ---------- */
+#categories { grid-area: cat; border-right: 1px solid var(--bord); padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+#categories h3, #scores h3 { margin: 4px 6px 6px; font-family: var(--titre); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--doux); }
+.cat { display: flex; align-items: center; gap: 10px; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 14px; padding: 11px 12px; }
+.cat:hover { background: var(--panneau); }
+.cat.active { background: linear-gradient(135deg, rgba(255,79,163,.2), rgba(124,92,255,.2)); border-color: #5a4aa8; }
+.cat .ico { font-size: 24px; width: 34px; text-align: center; }
+.cat .num { font-size: 11px; color: var(--doux); }
+.cat .lib { font-family: var(--titre); font-weight: 600; font-size: 16px; line-height: 1.15; }
+#rejoindre-mini { margin-top: auto; background: var(--panneau); border: 1px solid var(--bord); border-radius: 14px; padding: 10px; text-align: center; cursor: pointer; }
+#rejoindre-mini .qr { background: #fff; border-radius: 8px; padding: 6px; width: 130px; margin: 0 auto 6px; }
+#rejoindre-mini .qr svg, #qr-grand svg { width: 100%; height: auto; display: block; }
+#rejoindre-mini small { color: var(--doux); }
+#musique-etat { background: var(--panneau); border: 1px dashed var(--bord); border-radius: 12px; padding: 9px; font-size: 13px; color: var(--doux); text-align: center; }
+#musique-etat b { color: var(--texte); }
+
+/* ---------- Scène ---------- */
+#scene { grid-area: scene; display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+#main-a { display: none; align-items: center; gap: 14px; padding: 10px 18px; margin: 12px 16px 0; border-radius: 16px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, transparent), color-mix(in srgb, var(--c) 15%, transparent)); border: 2px solid var(--c);
+  animation: descend .25s ease-out; }
+#main-a.visible { display: flex; }
+#main-a .qui { flex: 1; font-family: var(--titre); font-size: 26px; font-weight: 700; }
+#main-a .qui small { font-family: inherit; font-size: 16px; opacity: .85; font-weight: 500; }
+@keyframes descend { from { transform: translateY(-12px); opacity: 0; } }
+#jeu { flex: 1; overflow: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+#flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle, var(--c) 0%, transparent 70%); }
+#flash.go { animation: flash .7s ease-out; }
+@keyframes flash { 0% { opacity: .75; } 100% { opacity: 0; } }
+
+#lecteur { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-top: 1px solid var(--bord); background: rgba(9,8,22,.7); font-size: 13px; color: var(--doux); }
+#lecteur input[type=range] { accent-color: var(--accent); }
+#progression { flex: 1; }
+#volume { width: 90px; }
+#btn-lecture { width: 42px; height: 42px; border-radius: 50%; border: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); font-size: 17px; }
+#lecteur label { display: flex; gap: 5px; align-items: center; white-space: nowrap; }
+
+/* ---------- Scores ---------- */
+#scores { grid-area: scores; border-left: 1px solid var(--bord); padding: 14px 12px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.ligne-score { --c: #888; display: grid; grid-template-columns: 8px 1fr auto; align-items: center; gap: 10px; background: var(--panneau); border: 1px solid var(--bord); border-radius: 14px; padding: 10px 10px 10px 0; overflow: hidden; }
+.ligne-score .couleur { height: 100%; background: var(--c); box-shadow: 0 0 14px var(--c); }
+.ligne-score .nom { font-family: var(--titre); font-weight: 600; font-size: 17px; }
+.ligne-score .val { font-family: var(--titre); font-size: 40px; font-weight: 700; line-height: 1; color: var(--c); text-shadow: 0 0 18px color-mix(in srgb, var(--c) 50%, transparent); }
+.ligne-score .boutons { display: flex; flex-direction: column; gap: 4px; }
+.ligne-score .boutons button { width: 38px; height: 30px; border-radius: 8px; border: 1px solid var(--bord); background: var(--panneau2); font-size: 18px; font-weight: 800; line-height: 1; }
+.ligne-score .boutons button:hover { background: #2a2558; }
+.ligne-score .milieu { display: flex; flex-direction: column; gap: 2px; }
+.ligne-score.tete .nom::after { content: " 👑"; }
+.ligne-score.bump .val { animation: bump .4s; }
+@keyframes bump { 40% { transform: scale(1.35); } }
+#aide-clavier { margin-top: auto; font-size: 12px; color: var(--doux); line-height: 1.7; background: var(--panneau); border-radius: 12px; padding: 10px; }
+
+/* ---------- Éléments de jeu communs ---------- */
+.entete-jeu { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.entete-jeu h2 { margin: 0; font-family: var(--titre); font-size: 30px; }
+.pastilles { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.pastille { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--bord); background: var(--panneau); font-weight: 700; }
+.pastille.fait { background: #173a2a; border-color: #2c6b4b; color: #8ff0bd; }
+.pastille.courant { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: 0; color: #fff; }
+.carte { background: rgba(18,16,42,.75); border: 1px solid var(--bord); border-radius: 22px; padding: 22px; }
+.commandes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.vide { text-align: center; color: var(--doux); padding: 60px 20px; font-size: 18px; }
+.reponse { text-align: center; font-family: var(--titre); }
+.reponse .t { font-size: 44px; font-weight: 700; background: linear-gradient(90deg, #fff, #ffc6e5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.reponse .a { font-size: 26px; color: var(--doux); }
+.reponse.apparait { animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } }
+.compteur { color: var(--doux); font-size: 14px; }
+.grand-message { text-align: center; font-family: var(--titre); font-size: 56px; font-weight: 700; }
+
+/* Nuage */
+.nuage { position: relative; flex: 1; min-height: 320px; border-radius: 24px; overflow: hidden;
+  background: radial-gradient(ellipse at center, rgba(124,92,255,.18), rgba(9,8,22,.2) 70%); border: 1px solid var(--bord); }
+.nuage .mot { position: absolute; font-family: var(--titre); font-weight: 700; white-space: nowrap; line-height: 1.05; text-shadow: 0 0 22px currentColor; }
+.nuage .mot.apparait { animation: motIn .6s cubic-bezier(.2,1.5,.4,1); }
+@keyframes motIn { from { transform: scale(0); opacity: 0; filter: blur(8px); } }
+
+/* Paroles */
+.paroles-avant { font-size: 30px; line-height: 1.45; text-align: center; white-space: pre-line; font-family: var(--titre); font-weight: 500; }
+.trous { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin-top: 22px; }
+.mot-trou { display: flex; gap: 4px; }
+.lettre { width: 34px; height: 48px; border-bottom: 4px solid var(--accent); display: flex; align-items: flex-end; justify-content: center;
+  font-family: var(--titre); font-size: 36px; font-weight: 700; color: var(--or); }
+.lettre.ponct { border-bottom-color: transparent; width: 14px; color: var(--texte); }
+.lettre.vue { animation: lettreIn .35s backwards; }
+@keyframes lettreIn { from { transform: translateY(-18px) scale(1.4); opacity: 0; } }
+
+/* Blind test */
+.disque-zone { display: flex; justify-content: center; align-items: center; flex: 1; min-height: 260px; flex-direction: column; gap: 20px; }
+.disque { width: 250px; height: 250px; border-radius: 50%; position: relative;
+  background: repeating-radial-gradient(circle, #15132c 0 2px, #0c0b1d 3px 5px); box-shadow: 0 0 60px rgba(124,92,255,.45), inset 0 0 0 6px #232048; }
+.disque::after { content: "?"; position: absolute; inset: 32%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); font-family: var(--titre); font-size: 52px; font-weight: 700; }
+.disque.tourne { animation: tourne 1.8s linear infinite; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+.egaliseur { display: flex; gap: 6px; height: 50px; align-items: flex-end; }
+.egaliseur i { width: 10px; background: linear-gradient(var(--accent), var(--accent2)); border-radius: 4px; height: 10%; }
+.egaliseur.actif i { animation: eq .8s ease-in-out infinite alternate; }
+.egaliseur i:nth-child(2n) { animation-delay: -.3s; } .egaliseur i:nth-child(3n) { animation-delay: -.55s; animation-duration: .6s; }
+@keyframes eq { from { height: 10%; } to { height: 100%; } }
+
+/* Karaoké */
+.karaoke-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: 280px; border-radius: 24px; border: 1px solid var(--bord); }
+.karaoke-zone.coupure { background: radial-gradient(circle, rgba(255,79,163,.35), transparent 70%); border-color: var(--accent); }
+.chrono-geant { font-family: var(--titre); font-size: 120px; font-weight: 700; line-height: 1; color: var(--or); text-shadow: 0 0 40px rgba(255,207,58,.6); }
+.num-chanson { display: inline-block; font-family: var(--titre); font-weight: 700; font-size: 22px; padding: 4px 14px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+.artiste .num { display: block; font-family: var(--titre); font-size: 15px; color: var(--accent); margin-bottom: 4px; }
+.trou-mot { color: var(--or); font-weight: 700; letter-spacing: 3px; }
+.trou-mot.vu { color: var(--ok); letter-spacing: 0; animation: lettreIn .4s; }
+.karaoke-coupure { border-color: var(--accent); background: radial-gradient(circle, rgba(255,79,163,.25), rgba(18,16,42,.75) 70%); }
+.aide-paroles { font-size: 26px; white-space: pre-line; text-align: center; color: var(--doux); max-width: 900px; }
+
+/* Chacun son tour */
+.artistes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.artiste { padding: 26px 16px; border-radius: 20px; border: 1px solid var(--bord); background: linear-gradient(160deg, #221d4f, #120f2c); text-align: center; }
+.artiste:hover { border-color: var(--accent); transform: translateY(-2px); }
+.artiste b { display: block; font-family: var(--titre); font-size: 24px; margin-bottom: 6px; }
+.artiste span { color: var(--doux); font-size: 13px; }
+.tours { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.tour { --c: #888; padding: 6px 14px; border-radius: 999px; border: 2px solid var(--c); font-weight: 700; opacity: .55; }
+.tour.courant { background: var(--c); color: #111; opacity: 1; transform: scale(1.12); box-shadow: 0 0 22px var(--c); }
+.tour.elimine { opacity: .25; text-decoration: line-through; border-style: dashed; }
+.equipe-courante { text-align: center; font-family: var(--titre); font-size: 46px; font-weight: 700; color: var(--c); text-shadow: 0 0 30px color-mix(in srgb, var(--c) 60%, transparent); }
+.barre-chrono { height: 12px; border-radius: 999px; background: var(--panneau2); overflow: hidden; }
+.barre-chrono i { display: block; height: 100%; background: linear-gradient(90deg, var(--ok), var(--or), var(--ko)); transition: width .1s linear; }
+.saisie { display: flex; gap: 10px; justify-content: center; }
+.saisie input { width: min(560px, 100%); font-size: 24px; padding: 14px 18px; border-radius: 14px; border: 2px solid var(--bord); background: #0e0c22; color: #fff; }
+.saisie input:focus { outline: none; border-color: var(--accent); }
+.verdict { text-align: center; font-size: 26px; font-family: var(--titre); font-weight: 600; min-height: 40px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.verdict.ok { color: var(--ok); } .verdict.ko { color: var(--ko); } .verdict.info { color: var(--or); }
+.cites { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.cite { --c: #888; padding: 6px 12px; border-radius: 10px; background: color-mix(in srgb, var(--c) 22%, #12102a); border-left: 4px solid var(--c); font-size: 15px; animation: pop .35s; }
+
+/* ---------- Fenêtres ---------- */
+.modale { position: fixed; inset: 0; background: rgba(4,3,12,.75); display: none; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(4px); }
+.modale.ouverte { display: flex; }
+.fenetre { background: #12102a; border: 1px solid var(--bord); border-radius: 22px; padding: 22px; max-width: 94vw; max-height: 92vh; overflow: auto; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+.fenetre h2 { margin: 0 0 14px; font-family: var(--titre); }
+.pied { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+#qr-grand { background: #fff; padding: 14px; border-radius: 16px; width: min(380px, 70vh); margin: 0 auto; }
+.lien { font-size: 20px; text-align: center; margin: 14px 0 4px; word-break: break-all; }
+.code-salle { text-align: center; font-family: var(--titre); font-size: 34px; letter-spacing: 8px; color: var(--or); }
+.champ { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--doux); }
+.champ input, .champ textarea, .champ select { font: inherit; font-size: 15px; color: var(--texte); background: #0c0a20; border: 1px solid var(--bord); border-radius: 9px; padding: 8px 10px; }
+.champ textarea { min-height: 70px; resize: vertical; }
+.champ .avec-bouton { display: flex; gap: 6px; } .champ .avec-bouton > :first-child { flex: 1; min-width: 0; }
+.case { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+
+#editeur .fenetre { width: 1100px; height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.ed-haut { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--bord); flex-wrap: wrap; }
+.ed-haut h2 { margin: 0 auto 0 0; }
+.ed-corps { flex: 1; display: grid; grid-template-columns: 210px 1fr; min-height: 0; }
+.ed-onglets { border-right: 1px solid var(--bord); padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.ed-contenu { overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.ed-apercu { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-top: 1px solid var(--bord); background: #0c0a20; font-size: 13px; color: var(--doux); }
+.ed-apercu input[type=range] { flex: 1; accent-color: var(--accent); }
+.ed-reglages { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; background: var(--panneau2); border-radius: 14px; padding: 12px; }
+.ed-item { background: var(--panneau2); border: 1px solid var(--bord); border-radius: 14px; padding: 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ed-item .ed-item-tete { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
+.ed-item .ed-item-tete b { margin-right: auto; font-family: var(--titre); }
+.ed-item .large { grid-column: 1 / -1; } .ed-item .demi { grid-column: span 2; }
+.mini { padding: 4px 9px; font-size: 13px; border-radius: 8px; }
+.note { font-size: 13px; color: var(--doux); }
+
+body.jeu-paroles #lecteur { display: none; }
+body.jeu-paroles #jeu { overflow: hidden; }
+body.jeu-paroles #jeu .carte { overflow: hidden !important; }
+#chrono-paroles { display: none; position: absolute; right: 22px; bottom: 14px; font-size: 14px; color: var(--doux); background: rgba(9,8,22,.7); padding: 4px 10px; border-radius: 8px; }
+body.jeu-paroles #chrono-paroles.actif { display: block; }
+.paroles-vue { font-size: clamp(15px, calc((100vh - 380px) / 14), 30px); height: calc(10 * 1.4em); overflow: hidden; font-family: var(--titre); font-weight: 400; text-align: center; flex-shrink: 0; }
+.paroles-defile { will-change: transform; }
+.paroles-defile > div { font-size: 1em; line-height: 1.4; color: #f2f1ff; }
+.paroles-defile > div.ligne-trous { min-height: calc(2 * 1.4em); display: flex; align-items: center; justify-content: center; }
+.ligne-trous .trous { margin-top: 0; }
+.paroles-defile > div.actuelle, .ligne-actuelle { font-weight: 800; color: #ff9a1f; }
+#logo { cursor: pointer; }
+#accueil { position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 34px; padding: 30px;
+  background: radial-gradient(ellipse at 50% 0%, #2a1d6b 0%, #120f33 45%, var(--fond) 80%); }
+#accueil.vu { display: flex; }
+#accueil h1 { margin: 0; font-family: var(--titre); font-size: 64px; background: linear-gradient(90deg, #ff7ac0, #9d8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.jeux-accueil { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; width: min(1500px, 100%); }
+.carte-jeu { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 34px 18px; border-radius: 26px; border: 1px solid var(--bord);
+  background: linear-gradient(160deg, #241e57, #120f2c); transition: transform .15s, border-color .15s, box-shadow .15s; }
+.carte-jeu:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 18px 50px rgba(255,79,163,.25); }
+.carte-jeu .num { font-family: var(--titre); font-size: 18px; color: var(--accent); letter-spacing: 2px; }
+.carte-jeu .ico { font-size: 72px; line-height: 1; }
+.carte-jeu .lib { font-family: var(--titre); font-weight: 700; font-size: 28px; line-height: 1.15; text-align: center; }
+.carte-jeu .desc { color: var(--doux); font-size: 15px; text-align: center; }
+#accueil .pied-accueil { color: var(--doux); font-size: 15px; }
+.chrono-devine { font-family: var(--titre); font-size: 64px; font-weight: 700; color: var(--or); text-shadow: 0 0 30px rgba(255,207,58,.5); min-width: 170px; text-align: center; line-height: 1; }
+.chrono-devine.urgent { color: var(--ko); animation: clignote .5s ease-in-out infinite alternate; }
+#toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #2a2458; border: 1px solid #5a4aa8; padding: 10px 18px; border-radius: 12px; z-index: 99; display: none; max-width: 80vw; }
+#toast.vu { display: block; animation: descend .2s; }
+#fin-manche { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 40; background: rgba(4,3,12,.7); }
+#fin-manche.vu { display: flex; }
+#fin-manche div { font-family: var(--titre); font-size: 64px; font-weight: 700; text-align: center; color: var(--c); text-shadow: 0 0 40px var(--c); animation: pop .6s cubic-bezier(.2,1.6,.4,1); }
+#fin-manche small { display: block; font-size: 22px; color: var(--doux); text-shadow: none; margin-top: 18px; }
+</style>
+</head>
+<body>
+
+<header id="barre">
+  <div id="logo">🎵 Quiz musical</div>
+  <div id="lumieres"></div>
+  <div id="actions">
+    <span id="reseau" class="ko"><b>●</b> connexion…</span>
+    <button class="btn" id="etat-buzz" title="Ouvrir / fermer les buzzers (B)">🔔 Buzzers ouverts</button>
+    <button class="btn" id="btn-rearmer" title="Réarmer les buzzers (R)">↺ Réarmer<kbd>R</kbd></button>
+    <button class="btn" id="btn-accueil" title="Écran d’accueil (A)">🏠 Accueil</button>
+    <button class="btn" id="btn-rejoindre">📱 Rejoindre</button>
+    <button class="btn" id="btn-equipes">👥 Équipes</button>
+    <button class="btn plein" id="btn-preparer">✏️ Préparer</button>
+  </div>
+</header>
+
+<nav id="categories">
+  <h3>Catégories</h3>
+  <div id="liste-cats"></div>
+  <div id="musique-etat"></div>
+  <div id="rejoindre-mini" title="Afficher en grand">
+    <div class="qr" id="qr-mini"></div>
+    <small>Scannez pour buzzer<br>Salle <b id="salle-mini"></b></small>
+  </div>
+</nav>
+
+<main id="scene">
+  <div id="main-a"><div class="qui"></div>
+    <button class="btn vert gros" id="btn-bonne">✓ Bonne réponse<kbd>V</kbd></button>
+    <button class="btn rouge gros" id="btn-mauvaise">✗ Mauvaise<kbd>X</kbd></button>
+  </div>
+  <div id="jeu"></div>
+  <div id="lecteur">
+    <button id="btn-lecture" title="Lecture / pause (Espace)">▶</button>
+    <span id="temps">0:00</span>
+    <input type="range" id="progression" min="0" max="1000" value="0">
+    <span id="duree">0:00</span>
+    🔊 <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+    <label title="Met la musique en pause dès qu'une équipe buzze"><input type="checkbox" id="pause-auto" checked> Pause au buzz</label>
+  </div>
+  <div id="flash"></div>
+  <div id="chrono-paroles"></div>
+</main>
+
+<aside id="scores">
+  <h3>Scores</h3>
+  <div id="liste-scores" style="display:flex;flex-direction:column;gap:8px"></div>
+  <div id="aide-clavier">
+    <b>Raccourcis</b><br>
+    Espace : lecture / pause<br>
+    A : écran d'accueil (les 5 jeux)<br>
+    R : réarmer · B : ouvrir/fermer<br>
+    V : bonne réponse · X : mauvaise<br>
+    ↑ ↓ : 10 lignes de paroles suivantes / précédentes<br>
+    Jeu 2 : → OK +1 · ↓ passer · ← précédente<br>
+    ← → : chanson précédente / suivante<br>
+    1 à 9 : +1 point à l'équipe n°<br>
+    Maj + 1 à 9 : −1 point
+  </div>
+</aside>
+
+<audio id="audio" preload="auto"></audio>
+<input type="file" id="input-dossier" webkitdirectory multiple hidden>
+<input type="file" id="input-import" accept=".json,application/json" hidden>
+
+<div class="modale" id="modale-rejoindre"><div class="fenetre" style="width:520px">
+  <h2>📱 Rejoindre le jeu</h2>
+  <div id="qr-grand"></div>
+  <div class="lien" id="lien-buzzer"></div>
+  <div class="code-salle" id="code-salle"></div>
+  <p class="note" id="note-rejoindre" style="text-align:center">Chaque joueur scanne le QR code, tape son prénom et choisit la couleur de son équipe. Wi-Fi ou 4G, peu importe.</p>
+  <div class="pied"><button class="btn" id="btn-nouvelle-salle" title="Change le code : les téléphones devront rescanner">Nouveau code</button><button class="btn plein" data-fermer>Fermer</button></div>
+</div></div>
+
+<div class="modale" id="modale-equipes"><div class="fenetre" style="width:560px">
+  <h2>👥 Équipes</h2>
+  <div id="liste-equipes-ed" style="display:flex;flex-direction:column;gap:8px"></div>
+  <div class="pied" style="justify-content:space-between">
+    <div style="display:flex;gap:8px"><button class="btn" id="btn-ajout-equipe">+ Ajouter une équipe</button><button class="btn" id="btn-zero">Scores à zéro</button></div>
+    <div style="display:flex;gap:8px"><button class="btn" data-fermer>Annuler</button><button class="btn plein" id="btn-valider-equipes">Enregistrer</button></div>
+  </div>
+</div></div>
+
+<div class="modale" id="editeur"><div class="fenetre">
+  <div class="ed-haut">
+    <h2>✏️ Préparer les jeux</h2>
+    <button class="btn" id="ed-dossier">📁 Dossier musique</button>
+    <button class="btn" id="ed-export" title="Sauvegarder la préparation dans un fichier">⬇ Exporter</button>
+    <button class="btn" id="ed-import" title="Charger une préparation">⬆ Importer</button>
+    <button class="btn" data-fermer>Annuler</button>
+    <button class="btn plein" id="ed-enregistrer">Enregistrer</button>
+  </div>
+  <div class="ed-corps"><div class="ed-onglets" id="ed-onglets"></div><div class="ed-contenu" id="ed-contenu"></div></div>
+  <div class="ed-apercu">
+    <button class="btn mini" id="ap-lecture">▶</button><span id="ap-nom">Écoute : aucune</span>
+    <input type="range" id="ap-prog" min="0" max="1000" value="0"><span id="ap-temps">0:00</span>
+    <span class="note">⏱ sur un champ = prendre le temps de l'écoute</span>
+  </div>
+</div></div>
+<audio id="audio-apercu" preload="auto"></audio>
+
+<div id="accueil"><h1>🎵 Quiz musical</h1><div class="jeux-accueil" id="jeux-accueil"></div><div class="pied-accueil">Touche <kbd>A</kbd> : revenir à cet écran</div></div>
+<div id="fin-manche"><div></div></div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+'use strict';
+// =====================================================================
+//  Utilitaires
+// =====================================================================
+const $ = (s, r = document) => r.querySelector(s);
+function h(tag, props, ...enfants) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'value') e.value = v;
+    else if (k === 'style') e.setAttribute('style', v);
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'html') e.innerHTML = v;
+    else if (typeof v !== 'string' && k in e) e[k] = v;
+    else e.setAttribute(k, v);
+  }
+  for (const c of enfants.flat()) { if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return e;
+}
+const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); };
+const lire = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (_) { return d; } };
+const ecrire = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+const melanger = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+let toastT;
+function toast(msg, ms = 3200) { const t = $('#toast'); t.textContent = msg; t.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('vu'), ms); }
+function ouvrirModale(id) { $('#' + id).classList.add('ouverte'); }
+function fermerModale(id) { $('#' + id).classList.remove('ouverte'); if (id === 'editeur') { $('#audio-apercu').pause(); } }
+document.querySelectorAll('[data-fermer]').forEach(b => b.onclick = () => fermerModale(b.closest('.modale').id));
+
+// =====================================================================
+//  Configuration des jeux (modifiable dans « Préparer »)
+// =====================================================================
+const CONFIG_DEFAUT = {
+  nuage: { version: 4, vitesse: 3, max_mots: 20, depuis_paroles: false, mots_liste: true, intervalle: 0.75, aleatoire: false, chansons_aleatoires: false, ordre_liste: true, chansons: [{"titre": "Le Jerk", "artiste": "Thierry Hazard", "fichier": "", "debut": 0, "mots": "1990\ndanse\nannées 60\nTop 50\nrétro\nchanteur"}, {"titre": "Aïcha", "artiste": "Khaled", "fichier": "", "debut": 0, "mots": "1996\nraï\nAlgérie\nprénom\ndéclaration\nJean-Jacques Goldman"}, {"titre": "Caroline", "artiste": "MC Solaar", "fichier": "", "debut": 0, "mots": "1991\nrap\njazz\nrupture\nprénom\nQui sème le vent récolte le tempo"}, {"titre": "Allumer le feu", "artiste": "Johnny Hallyday", "fichier": "", "debut": 0, "mots": "1998\nrock\nconcert\nStade de France\nflammes\nPascal Obispo"}, {"titre": "Au soleil", "artiste": "Jenifer", "fichier": "", "debut": 0, "mots": "2004\nchanteuse\nété\nvacances\nplage\nStar Academy"}, {"titre": "La Boulette", "artiste": "Diam's", "fichier": "", "debut": 0, "mots": "2006\nrap\njeunesse\ncolère\ngénération\nDans ma bulle"}, {"titre": "Ma philosophie", "artiste": "Amel Bent", "fichier": "", "debut": 0, "mots": "2004\nNouvelle Star\nR&B\nconfiance\ndifférence\nhymne"}, {"titre": "Parle à ma main", "artiste": "Fatal Bazooka feat. Yelle", "fichier": "", "debut": 0, "mots": "2007\nparodie\nélectro\ngeste\nringard\nMichaël Youn"}, {"titre": "Le temps", "artiste": "Tayc", "fichier": "", "debut": 0, "mots": "2021\nR&B\nafrolove\nchanteur\nslow\nFleur froide"}, {"titre": "Sous le vent", "artiste": "Garou et Céline Dion", "fichier": "", "debut": 0, "mots": "2000\nduo\nQuébec\nvoile\nmer\nnavigation"}, {"titre": "La Tribu de Dana", "artiste": "Manau", "fichier": "", "debut": 0, "mots": "1998\nrap celtique\nBretagne\ndruides\nguerriers\nbataille"}, {"titre": "Sapés comme jamais", "artiste": "Maître Gims feat. Niska", "fichier": "", "debut": 0, "mots": "2015\nrap\nmode\nélégance\nsoirée\nMon cœur avait raison"}, {"titre": "Ciel", "artiste": "Gims", "fichier": "", "debut": 0, "mots": "2019\nrap\nchanteur\nlunettes noires\nCeinture noire\nSexion d'Assaut"}, {"titre": "Balance ton quoi", "artiste": "Angèle", "fichier": "", "debut": 0, "mots": "2018\nBelgique\nféminisme\nsexisme\n#MeToo\nBrol"}] },
+  paroles: { version: 2, chansons: [{"titre": "Melodrama", "artiste": "Disiz et Theodora", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Clic clic pan pan", "artiste": "Yanns", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Et bam", "artiste": "Mentissa", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Tahiti", "artiste": "Keen'V", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Beau-papa", "artiste": "Vianney", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Je t'emmène au vent", "artiste": "Louise Attaque", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Tu m'oublieras", "artiste": "Larusso", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Je danse le Mia", "artiste": "IAM", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}, {"titre": "Tomber la chemise", "artiste": "Zebda", "fichier": "", "debut": 0, "paragraphes": "", "arret": 0, "reponse": ""}] },
+  blindtest: { chansons: [ { titre: 'Extrait 1', artiste: '', fichier: '', debut: 0 } ] },
+  karaoke: { version: 2, chansons: [{"titre": "Les Lacs du Connemara", "artiste": "Michel Sardou", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Les Champs-Élysées", "artiste": "Joe Dassin", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Santiano", "artiste": "Hugues Aufray", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Je te donne", "artiste": "Jean-Jacques Goldman et Michael Jones", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Mexico", "artiste": "Luis Mariano", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Petite Marie", "artiste": "Francis Cabrel", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "La même", "artiste": "Gims et Vianney", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Dommage", "artiste": "Bigflo & Oli", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Moi... Lolita", "artiste": "Alizée", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "En feu", "artiste": "Soprano", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Melodrama", "artiste": "Disiz et Theodora", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Coco", "artiste": "Wejdene", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}, {"titre": "Beau-papa", "artiste": "Vianney", "fichier": "", "debut": 0, "paroles": "", "trou_debut": 50, "trou_nb": 0, "coupure": 0, "duree": 8}] },
+  devine: { version: 3, duree: 120, titres: ["Le Sud — Nino Ferrer", "Mistral gagnant — Renaud", "Les Démons de minuit — Images", "Ella, elle l'a — France Gall", "Nuit de folie — Début de Soirée", "Les Mots bleus — Christophe", "Aline — Christophe", "Le Lion est mort ce soir — Pow Wow", "Joe le taxi — Vanessa Paradis", "Marcia Baïla — Les Rita Mitsouko", "C'est comme ça — Les Rita Mitsouko", "L'Aventurier — Indochine", "Tous les cris les SOS — Daniel Balavoine", "L'Aziza — Daniel Balavoine", "Ça plane pour moi — Plastic Bertrand", "Partenaire particulier — Partenaire Particulier", "Femme libérée — Cookie Dingler", "Week-end à Rome — Étienne Daho", "Alexandrie Alexandra — Claude François", "Ces soirées-là — Yannick", "Laisse tomber les filles — France Gall", "La Bombe humaine — Téléphone", "Cendrillon — Téléphone", "Un autre monde — Téléphone", "Le Bal masqué — La Compagnie créole", "La Groupie du pianiste — Michel Berger", "Quand la musique est bonne — Jean-Jacques Goldman", "Envole-moi — Jean-Jacques Goldman", "Comme toi — Jean-Jacques Goldman", "Casser la voix — Patrick Bruel", "Place des grands hommes — Patrick Bruel", "Ma liberté de penser — Florent Pagny", "Chanter — Florent Pagny", "Né quelque part — Maxime Le Forestier", "San Francisco — Maxime Le Forestier", "Le Coup de soleil — Richard Cocciante", "Il venait d'avoir 18 ans — Dalida", "Gigi l'amoroso — Dalida", "Les Rois du monde — Roméo et Juliette", "La Bohème — Charles Aznavour", "Emmenez-moi — Charles Aznavour", "L'Encre de tes yeux — Francis Cabrel", "Si tu vas à Rio — Dario Moreno", "Il jouait du piano debout — France Gall", "Pour un flirt — Michel Delpech", "Le Loir-et-Cher — Michel Delpech", "L'Été indien — Joe Dassin", "Salut les amoureux — Joe Dassin", "Siffler sur la colline — Joe Dassin", "Comme d'habitude — Claude François", "Le Téléphone pleure — Claude François", "Belles ! Belles ! Belles ! — Claude François", "Avec le temps — Léo Ferré", "La Javanaise — Serge Gainsbourg", "Le Poinçonneur des Lilas — Serge Gainsbourg", "Couleur café — Serge Gainsbourg", "Poupée de cire, poupée de son — France Gall", "Hexagone — Renaud", "Dès que le vent soufflera — Renaud", "Laisse béton — Renaud", "J'ai encore rêvé d'elle — Il était une fois", "Il est cinq heures, Paris s'éveille — Jacques Dutronc", "Les Play-boys — Jacques Dutronc", "L'Opportuniste — Jacques Dutronc", "La Ballade des gens heureux — Gérard Lenorman", "Voici les clés — Gérard Lenorman", "Une belle histoire — Michel Fugain", "Fais comme l'oiseau — Michel Fugain", "Tu es foutu — In-Grid", "Encore un soir — Céline Dion", "S'il suffisait d'aimer — Céline Dion", "Libertine — Mylène Farmer", "Sans contrefaçon — Mylène Farmer", "Les Vacances au bord de la mer — Michel Jonasz", "Lucie — Pascal Obispo", "Fan — Pascal Obispo", "Tombé du ciel — Jacques Higelin", "Allô maman bobo — Alain Souchon", "Jamais content — Alain Souchon", "Belle-Île-en-Mer, Marie-Galante — Laurent Voulzy", "Rockollection — Laurent Voulzy", "Elle a les yeux revolver — Marc Lavoine", "Tout le bonheur du monde — Sinsemilia", "Ma Benz — Suprême NTM", "Pas le temps — Faf Larage", "Elle me dit — Mika", "Je veux tes yeux — Angèle", "Les Passants — Zaz", "On écrit sur les murs — Kids United", "J'aime plus Paris — Thomas Dutronc", "Le Jardin d'hiver — Henri Salvador", "Un jour en France — Noir Désir", "Sous le ciel de Paris — Yves Montand", "La Grenade — Clara Luciani", "Tout va bien — Orelsan", "Jour de neige — Elsa", "Mourir d'aimer — Charles Aznavour", "Résiste — France Gall", "Sauver l'amour — Daniel Balavoine", "Le Chanteur — Daniel Balavoine"] },
+  plaque: { version: 2, chansons: [{"titre_musique": "Alors on danse", "artiste_musique": "Stromae", "titre_paroles": "Désenchantée", "artiste_paroles": "Mylène Farmer", "paroles": ""}, {"titre_musique": "Andalouse", "artiste_musique": "Kendji Girac", "titre_paroles": "Pour que tu m'aimes encore", "artiste_paroles": "Céline Dion", "paroles": ""}, {"titre_musique": "Dernière danse", "artiste_musique": "Indila", "titre_paroles": "Que je t'aime", "artiste_paroles": "Johnny Hallyday", "paroles": ""}, {"titre_musique": "Je veux", "artiste_musique": "Zaz", "titre_paroles": "Foule sentimentale", "artiste_paroles": "Alain Souchon", "paroles": ""}, {"titre_musique": "Bella", "artiste_musique": "Gims", "titre_paroles": "Toi + Moi", "artiste_paroles": "Grégoire", "paroles": ""}, {"titre_musique": "Jour 1", "artiste_musique": "Louane", "titre_paroles": "Femme Like U", "artiste_paroles": "K.Maro", "paroles": ""}, {"titre_musique": "Formidable", "artiste_musique": "Stromae", "titre_paroles": "Le Lac", "artiste_paroles": "Julien Doré", "paroles": ""}, {"titre_musique": "Ramenez la coupe à la maison", "artiste_musique": "Vegedream", "titre_paroles": "Basique", "artiste_paroles": "Orelsan", "paroles": ""}] },
+  blindcat: { version: 4, categories: [{"nom": "Séries TV", "icone": "📺", "titres": ["I'll Be There for You (Friends) — The Rembrandts", "Les Simpson (générique) — Danny Elfman", "Game of Thrones (générique) — Ramin Djawadi", "Stranger Things (générique) — Kyle Dixon & Michael Stein", "Mission : Impossible (générique) — Lalo Schifrin"]}, {"nom": "Rap", "icone": "🎤", "titres": ["Je danse le Mia — IAM", "Bouge de là — MC Solaar", "Laisse pas traîner ton fils — Suprême NTM", "Au DD — PNL", "Tchikita — Jul", "En feu — Soprano"]}, {"nom": "Chansons françaises", "icone": "🇫🇷", "titres": ["La Vie en rose — Édith Piaf", "Ne me quitte pas — Jacques Brel", "Les Copains d'abord — Georges Brassens", "Je te promets — Johnny Hallyday", "Papaoutai — Stromae"]}, {"nom": "Titres 2024-2026", "icone": "🆕", "titres": ["Ninao — Gims", "Parisienne — Gims & La Mano 1.9", "Feel Good — Charlotte Cardin", "Espresso — Sabrina Carpenter", "APT. — Rosé & Bruno Mars", "Mon BÉbÉ — Rnboi"]}] },
+  chacun: { version: 2, duree_tour: 20, point_par_titre: true, elimination: true, artistes: [{"nom": "Francis Cabrel", "titres": ["Je l'aime à mourir", "Petite Marie", "L'encre de tes yeux", "La dame de Haute-Savoie", "Sarbacane", "C'est écrit", "Octobre", "Hors-saison", "Tout le monde y pense", "Animal", "Les murs de poussière", "Carte postale", "Encore et encore", "Je pense encore à toi", "Rosie", "Samedi soir sur la Terre", "La corrida", "Assis sur le rebord du monde", "Des roses et des orties", "Le reste du temps", "Elle écoute pousser les fleurs", "Les chevaliers cathares", "Répondez-moi", "Leïla", "Il faudra leur dire", "La fille qui m'accompagne", "Je t'aimais, je t'aime, je t'aimerai", "Presque rien", "Quelqu'un de l'intérieur", "Saïd et Mohamed", "Ma place dans le trafic", "Une star à sa façon", "Te ressembler", "Vie de chien", "Bonne nouvelle", "Cent ans de plus", "L'instant d'amour", "Pas trop de peine", "Je rêve", "Édition spéciale", "Un gramme de terre", "Giors", "Rockstars du Moyen Âge", "Question d'équilibre", "Tourner les hélicos", "Je te suivrai", "La cabane du pêcheur", "Le monde est sourd", "Qu'est-ce que t'en dis ?", "Tu me corresponds", "Les gens absents", "Gardien de nuit", "Le gorille", "La robe et l'échelle", "Le chêne liège", "Des hommes pareils", "Né dans le bayou", "Les cardinaux en costume", "Comme une femme", "Je te veux", "Partir pour rester", "Dur comme fer", "À chaque amour que nous ferons", "Le pays d'à côté", "Peuple des fontaines", "À l'aube revenant", "Un morceau de Sicre", "Madame n'aime pas", "Mademoiselle l'aventure", "Les chemins de traverse", "Fragile", "Photos de voyages", "Les beaux dégâts", "La quiero a morir", "La complainte de la butte (avec Patrick Bruel)", "Tout reste à faire (avec Souad Massi)", "Sueño (avec les Gipsy Kings)", "Lucie (avec Nolwenn Leroy)", "Les filles, à quoi ça sert ? (avec Bénabar, Goldman et Souchon)", "Vengo a ofrecer mi corazón (avec Mercedes Sosa)"]}, {"nom": "Gims", "titres": ["Bella", "Sapés comme jamais (avec Niska)", "Est-ce que tu m'aimes ?", "J'me tire", "Zombie", "Changer", "Ma beauté", "Hola Señorita (avec Maluma)", "Caméléon", "Miami Vice", "Corazón (avec Lil Wayne et French Montana)", "Le pire", "Laissez passer", "Ciel", "Reste (avec Sting)", "La même (avec Vianney)", "Tout donner", "Brisé", "Après vous madame (avec Soolking)", "Loin (avec Dany Synthé)", "Sois pas timide", "Spider (avec Dystinct)", "Origami (avec XNilo)", "Habibi", "Warano Style", "Tu vas me manquer", "Je te pardonne (avec Sia)", "Zoum Zoum (avec Djuna Family)", "Boucan (avec Jul)", "Marabout", "Mi Gna (avec Super Sako et Hayko)", "Loup garou (avec Sofiane)", "Anakin", "Oulala", "Ceci n'est pas du rap (avec Niro)", "Le prix à payer", "Entre nous c'est mort", "10/10 (avec Dadju et Alonzo)", "Malheur, malheur", "Yolo", "Immortel", "Oro Jackson (avec Gazo)", "Jusqu'ici tout va bien", "Belle (avec Dadju et Slimane)", "GJS (avec Jul et SCH)", "Only You (avec Dhurata Dora)", "Prends ma main (avec Vitaa)", "Maintenant", "Seya (avec Morad)", "Loco (avec Lossa)", "Ohma Tokita", "Ninao", "Baby", "Touché (avec KeBlack)", "Piano (avec Werenoi)", "Appelle ta copine", "Air Force blanche (avec Jul)", "Parisienne (avec La Mano 1.9)", "Tu me rends bête (avec Damso)", "Bloqué (avec L2B)", "Sentimental", "Spa (avec Theodora)", "T'avais raison (avec Maes)", "Soleil", "Pas de nouvelle bonne nouvelle (avec DJ Abdel et Black M)", "Ma mélodie (avec Dry)", "One Shot (avec Dry)", "Coucou (avec Colonel Reyel)", "Fin de dream (avec H Magnum)", "AVF (avec Stromae et Orelsan)", "Game Over (avec Vitaa)", "Longueur d'avance (avec Booba)", "Dans son sac (avec Alonzo)", "Petit jaloux (avec Lacrim)", "Elle avait son djo (avec Niska)", "Ce soir ne sors pas (avec Lacrim)", "Par amour (avec Dadju)", "Ma fierté (avec Dadju)", "Christophe (avec Orelsan)", "Bella ciao (avec Vitaa, Dadju et Slimane)", "Baden Baden (avec SCH)", "Dernier métro (avec Kendji Girac)", "César (avec Black M)", "Carré OK (avec Soolking)", "Meurtre par strangulation", "VQ2PQ", "La chute", "Épuisé", "À la base", "Pas touché (avec Pitbull)", "Melynda Gates", "Longue vie (avec Lefa)", "Hasta luego", "Mon cœur avait raison", "Cadeaux", "ABCD", "La main du roi", "Sans rétro (avec Dadju)", "Paname", "Pense à moi", "Tu ne le vois pas (avec Dadju)", "La nuit c'est fait pour dormir (avec Orelsan)", "Appelez la police (avec MHD)", "Tant pis", "Fuegolando", "Laissez-moi tranquille", "Tu reviendras", "Merci maman", "T'es partie", "Bonita", "Où aller", "Gunshot", "Tu me l'avais promis", "60 %", "Je t'en veux", "Les roses ont des épines", "Pirate (avec J Balvin)", "En secret (avec Vitaa)", "Jasmine", "Naïf", "Comme une ombre", "Mets-moi bien", "Te quiero (avec DJ Assad)", "Sicario (avec Heuss l'Enfoiré)", "Jetez pas l'œil (avec Vald)", "C'est comme ça", "Thomas Shelby", "Mirage (avec Ozuna)", "Terminal 2F (avec Dadju)", "San Goku", "Diana", "Arhbo (avec Ozuna)", "Le firmament (avec Vianney)"]}, {"nom": "Vianney", "titres": ["Pas là", "Je te déteste", "Veronica", "Les gens sont méchants", "On est bien comme ça", "Idées blanches", "Notre-Dame-des-Oiseaux", "Je m'en vais", "Moi aimer toi", "Dumbo", "Si on chantait", "Le fils à papa", "J'm'en fous", "Sans le dire", "N'attendons pas", "Beau-papa", "Pour de vrai", "Merci pour ça", "Tout nu dans la neige", "Dabali", "Les imbéciles", "Quand j'étais chanteur", "Les filles d'aujourd'hui (avec Joyce Jonathan)", "La même (avec Gims)", "Chanson sur ma drôle de vie (avec Véronique Sanson)", "Allez reste (avec Boulevard des Airs)", "Comment on fait (avec Zazie)", "L'antidote (avec Ben Mazué)", "Je suis fou (avec Kendji Girac et Soprano)", "Il faudrait (avec Bigflo & Oli)", "Le départ (avec MC Solaar)", "Maintenant (avec Renaud)", "Call on Me (avec Ed Sheeran)", "Ne me changez pas (avec Janie)", "Le feu (avec Kendji Girac)", "Le firmament (avec Gims)", "Keep It Simple (avec Mika)", "La vie m'suffit (avec Jean-Louis Aubert)", "Tu me guéris (avec Mentissa)", "Un homme (avec Florent Pagny)", "Shifting Paradigms (avec Charlie Winston)", "Too Late (avec Aiden)", "Debout (avec Eric Devillers)", "À ta santé (avec Soprano)", "Where Do I Go (avec Rosa Linn)", "Loin de moi (avec Nej')", "La fierté (avec Gazo)", "D'or et d'étain", "J'ai menti", "Pourquoi papa"]}, {"nom": "Stromae", "titres": ["Alors on danse", "Papaoutai", "Formidable", "Tous les mêmes", "Ta fête", "Quand c'est ?", "Carmen", "Te quiero", "House'llelujah", "Peace or Violence", "Bâtard", "Humain à l'eau", "Ave Cesaria", "Sommeil", "Racine carrée", "Moules frites", "Merci", "Santé", "L'enfer", "Fils de joie", "La solassitude", "Invaincu", "Riez", "Bienvenue chez moi", "Je cours", "Pas vraiment", "Mauvaise journée", "Bonne journée", "Déclaration", "C'est que du bonheur", "Défiler", "Silence", "Rail de musique", "Up Saw Liz", "Enfants de l'an 2000", "Faut qu't'arrêtes le rap (avec J.E.D.I.)", "Mon amour (avec Camila Cabello)", "AVF (avec Gims et Orelsan)", "Ma meilleure ennemie (avec Pomme)", "Que ce soit clair (avec Paul Kalkbrenner)", "Des fleurs (avec Tove Lo)", "Comme dab (avec Vitaa)", "La pluie (avec Orelsan)", "Arabesque (avec Coldplay)", "Pardon (avec Burna Boy)", "Meltdown (avec Lorde, Pusha T, Q-Tip et Haim)", "Putain putain (avec Arno)", "My Sins Are My Savior (avec Madonna)", "La place du roi (avec Seriak)", "Ghetto (avec Kery James)", "Hello Shadow (avec Kiesza)"]}, {"nom": "Johnny Hallyday", "titres": ["Que je t'aime", "Allumer le feu", "L'envie", "Quelque chose de Tennessee", "Gabrielle", "Je te promets", "Vivre pour le meilleur", "Marie", "Requiem pour un fou", "Le pénitencier", "Retiens la nuit", "Noir c'est noir", "Toute la musique que j'aime", "Ma gueule", "Diego libre dans sa tête", "Laura", "Mirador", "Souvenirs, souvenirs", "Da dou ron ron", "Viens danser le twist", "L'idole des jeunes", "Pour moi la vie va commencer", "Si j'étais un charpentier", "J'oublierai ton nom (avec Carmel)", "Tous ensemble", "Sang pour sang", "Derrière l'amour", "Elle m'oublie", "Je suis né dans la rue", "Hey Joe", "Excuse-moi partenaire", "Rock'n'roll attitude", "Le chanteur abandonné", "Poème sur la 7e", "Je t'attends", "Mon plus beau Noël", "Ne m'oublie pas", "Seul", "Fils de personne", "On a tous besoin d'amour (avec Clémence)", "J'en parlerai au diable", "Mon pays c'est l'amour", "Je veux te graver dans ma vie", "Ça n'finira jamais", "Oh ! ma jolie Sarah", "Elle est terrible", "Le bon temps du rock'n'roll", "T'aimer follement", "Les mauvais garçons", "Dis-lui que j'en rêve", "Quand revient la nuit", "Johnny lui dit adieu", "Mes yeux sont fous", "Mon anneau d'or", "Cheveux longs et idées courtes", "Je l'aime", "Le diable me pardonne", "San Francisco", "Amour d'été", "Les chevaliers du ciel", "Petite fille", "Entre mes mains", "L'histoire de Bonnie and Clyde", "À tout casser", "Rivière... ouvre ton lit", "Fumée", "Ceux que l'amour a blessés", "Deux amis pour un amour", "Jésus Christ", "Essayez", "Comme si je devais mourir demain", "J'en mettrais pas ma main au feu", "Rien n'vaut cette fille-là", "Tu peux partir si tu le veux", "J'ai un problème (avec Sylvie Vartan)", "Comme un corbeau blanc", "Noël interdit", "Le feu", "Je t'aime, je t'aime, je t'aime", "Johnny Rider", "Prends ma vie", "À l'hôtel des cœurs brisés", "Hey lovely lady", "La terre promise", "C'est la vie", "Le cœur en deux", "Revoilà ma solitude", "J'ai oublié de vivre", "La fin du voyage", "Qu'est-ce que tu croyais", "À partir de maintenant", "La fille de l'hiver", "Chez Madame Lolita", "Excusez-moi de chanter encore du rock'n'roll", "Je t'ai aimée", "J'en ai marre", "Je suis victime de l'amour", "Mon Amérique à moi", "Montpellier", "Cartes postales d'Alabama", "L'amour violent", "Pour ceux qui s'aiment", "Mon p'tit loup", "Rien à personne", "Aimer vivre", "Si j'étais moi", "Les vautours", "Himalaya", "Cadillac", "Je ne suis pas un héros", "Ça ne change pas un homme", "Dans un an ou un jour", "Et puis je sais", "Laisse les filles", "La guitare fait mal", "Je serai là", "J'la croise tous les matins", "Quand le masque tombe", "Rester libre", "L'hymne à l'amour", "Tes tendres années", "La ville des âmes en peine", "Ce que je sais", "Debout", "Un jour viendra", "Partie de cartes", "Pardon", "Ô Carole", "Serre la main d'un fou", "Douce violence", "Quelques cris", "Pauvres diables", "Ne reviens pas", "L'instinct", "Je n'ai jamais pleuré", "Tout au bout de nos peines (avec Isabelle Boulay)", "Ma religion dans son regard", "La paix", "La loi du silence", "La quête", "Si mon cœur", "Et maintenant", "Jamais seul", "Je viendrai te chercher (avec Patrick Fiori)", "La douceur de vivre", "Guitar Hero", "Autoportrait", "L'attente", "20 ans", "Un jour l'amour te trouvera", "Regarde-nous", "Rester vivant", "Te manquer", "De l'amour", "Pardonne-moi", "Love Affair (avec Kathy Mattea)", "Fool for Love (avec Michael Bolton)", "L'amour peut prendre froid (avec Céline Dion)", "Unchained Melody (avec Joss Stone)", "Jeune pour toujours (avec Hugues Aufray)", "Come il sole all'improvviso (avec Laura Pausini)", "Imagine (avec Laeticia Hallyday)", "Apprendre à vivre ensemble (avec Nanette Workman)", "Il faut savoir (avec Charles Aznavour)", "Mama (avec Zucchero)", "Cerbatana (avec Loquillo)", "Le temps passe (avec Ministère Amer et Doc Gynéco)"]}] }
+};
+let CONFIG = lire('quiz2-config', null) || JSON.parse(JSON.stringify(CONFIG_DEFAUT));
+for (const k of Object.keys(CONFIG_DEFAUT)) if (!CONFIG[k]) CONFIG[k] = JSON.parse(JSON.stringify(CONFIG_DEFAUT[k]));
+if (CONFIG.nuage.max_mots == null) CONFIG.nuage.max_mots = 20;
+if ((CONFIG.blindcat.version || 1) < 2) {   // 5 extraits par catégorie (sans écraser une liste déjà remplie)
+  CONFIG.blindcat.categories = CONFIG.blindcat.categories || [];
+  for (const d of CONFIG_DEFAUT.blindcat.categories) { const k = CONFIG.blindcat.categories.find(x => x.nom === d.nom); if (!k) CONFIG.blindcat.categories.push(JSON.parse(JSON.stringify(d))); else if (!(k.titres || []).length) k.titres = d.titres.slice(); }
+  CONFIG.blindcat.version = 2; ecrire('quiz2-config', CONFIG);
+}
+if ((CONFIG.blindcat.version || 1) < 3) {   // sans « Ambiance » ni « Décalé », avec « Titres 2024-2026 »
+  CONFIG.blindcat.categories = (CONFIG.blindcat.categories || []).filter(k => k.nom !== 'Ambiance' && k.nom !== 'Décalé');
+  const d = CONFIG_DEFAUT.blindcat.categories.find(k => k.nom === 'Titres 2024-2026');
+  if (!CONFIG.blindcat.categories.some(k => k.nom === d.nom)) CONFIG.blindcat.categories.push(JSON.parse(JSON.stringify(d)));
+  CONFIG.blindcat.version = 3; ecrire('quiz2-config', CONFIG);
+}
+if ((CONFIG.blindcat.version || 1) < 4) {   // « En feu » (MP3 fourni) dans la catégorie Rap
+  const rap = (CONFIG.blindcat.categories || []).find(k => k.nom === 'Rap');
+  if (rap && !(rap.titres || []).some(t => /^en feu/i.test(t))) rap.titres.push('En feu — Soprano');
+  CONFIG.blindcat.version = 4; ecrire('quiz2-config', CONFIG);
+}
+if ((CONFIG.plaque.version || 1) < 2) { if (!(CONFIG.plaque.chansons || []).length) CONFIG.plaque.chansons = JSON.parse(JSON.stringify(CONFIG_DEFAUT.plaque.chansons)); CONFIG.plaque.version = 2; ecrire('quiz2-config', CONFIG); }  // 8 manches proposées
+if (!CONFIG.nuage.ordre_liste) { CONFIG.nuage.chansons_aleatoires = false; CONFIG.nuage.ordre_liste = true; ecrire('quiz2-config', CONFIG); }  // chansons du nuage dans l'ordre de la liste
+if ((CONFIG.devine.version || 1) < 3) { if (!(Number(CONFIG.devine.duree) > 0)) CONFIG.devine.duree = 120; }  // chrono de 2 min
+if ((CONFIG.devine.version || 1) < 2) { if (!(CONFIG.devine.titres || []).length) CONFIG.devine.titres = CONFIG_DEFAUT.devine.titres.slice(); CONFIG.devine.version = 2; }  // 100 chansons par défaut
+if ((CONFIG.devine.version || 1) < 3) { CONFIG.devine.version = 3; ecrire('quiz2-config', CONFIG); }
+if ((CONFIG.nuage.vitesse || 1) < 2) { CONFIG.nuage.intervalle = (Number(CONFIG.nuage.intervalle) || 3) / 2; CONFIG.nuage.vitesse = 2; }  // mots 2 fois plus rapides
+if (CONFIG.nuage.vitesse < 3) { CONFIG.nuage.intervalle = (Number(CONFIG.nuage.intervalle) || 1.5) / 2; CONFIG.nuage.vitesse = 3; ecrire('quiz2-config', CONFIG); }  // encore 2 fois plus rapides
+if (!CONFIG.nuage.mots_liste) { CONFIG.nuage.depuis_paroles = false; CONFIG.nuage.mots_liste = true; ecrire('quiz2-config', CONFIG); }  // mots pris dans la liste
+// Mise à jour du karaoké : nouvelle liste de chansons (une chanson déjà préparée sous le même titre garde vos réglages)
+if ((CONFIG.karaoke.version || 1) < CONFIG_DEFAUT.karaoke.version) {
+  const t = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+  const avant = CONFIG.karaoke.chansons || [];
+  CONFIG.karaoke.chansons = CONFIG_DEFAUT.karaoke.chansons.map(c => ({ ...c, ...(avant.find(x => t(x.titre) === t(c.titre)) || {}) }));
+  CONFIG.karaoke.version = CONFIG_DEFAUT.karaoke.version;
+  ecrire('quiz2-config', CONFIG);
+}
+// Mise à jour de « Terminer les paroles » : nouvelle liste de chansons (une chanson déjà préparée sous le même titre garde vos réglages)
+if ((CONFIG.paroles.version || 1) < CONFIG_DEFAUT.paroles.version) {
+  const t = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+  const avant = CONFIG.paroles.chansons || [];
+  CONFIG.paroles.chansons = CONFIG_DEFAUT.paroles.chansons.map(c => ({ ...c, ...(avant.find(x => t(x.titre) === t(c.titre)) || {}) }));
+  CONFIG.paroles.version = CONFIG_DEFAUT.paroles.version;
+  ecrire('quiz2-config', CONFIG);
+}
+// Mise à jour du nuage de mots : la liste est remplacée par celle de la version ; une chanson déjà préparée sous le même titre garde vos réglages
+if ((CONFIG.nuage.version || 1) < CONFIG_DEFAUT.nuage.version) {
+  const t = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+  const avant = CONFIG.nuage.chansons || [];
+  if ((CONFIG.nuage.version || 1) >= 3) {
+    // liste déjà à jour : on ajoute seulement les chansons nouvelles
+    CONFIG.nuage.chansons = avant.concat(CONFIG_DEFAUT.nuage.chansons.filter(c => !avant.some(x => t(x.titre) === t(c.titre))).map(c => ({ ...c })));
+  } else CONFIG.nuage.chansons = CONFIG_DEFAUT.nuage.chansons.map(c => {
+    const v = avant.find(x => t(x.titre) === t(c.titre));
+    return v && (CONFIG.nuage.version || 1) < 2 ? { ...v } : { ...c, fichier: (v && v.fichier) || '', debut: (v && v.debut) || 0 };
+  });
+  CONFIG.nuage.chansons_aleatoires = true;
+  CONFIG.nuage.version = CONFIG_DEFAUT.nuage.version;
+  ecrire('quiz2-config', CONFIG);
+}
+// Mise à jour des listes d'artistes pour une préparation déjà enregistrée : ajoute les titres manquants, sans rien supprimer
+if ((CONFIG.chacun.version || 1) < CONFIG_DEFAUT.chacun.version) {
+  const base = t => String(t || '').replace(/\([^)]*\)/g, ' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+  CONFIG.chacun.artistes = CONFIG.chacun.artistes || [];
+  for (const def of CONFIG_DEFAUT.chacun.artistes) {
+    const a = CONFIG.chacun.artistes.find(x => base(x.nom) === base(def.nom) || (base(def.nom) === 'gims' && base(x.nom) === 'maitregims'));
+    if (!a) { CONFIG.chacun.artistes.push(JSON.parse(JSON.stringify(def))); continue; }
+    if (base(def.nom) === 'gims') a.nom = def.nom;
+    const deja = new Set((a.titres || []).map(base));
+    a.titres = (a.titres || []).concat(def.titres.filter(d => !deja.has(base(d))));
+  }
+  CONFIG.chacun.version = CONFIG_DEFAUT.chacun.version;
+  ecrire('quiz2-config', CONFIG);
+}
+
+// =====================================================================
+//  Équipes, scores et buzzers
+// =====================================================================
+const EQUIPES_DEFAUT = [
+  { id: 'rouge', nom: 'Rouge', couleur: '#ff3b5c', score: 0 }, { id: 'bleu', nom: 'Bleu', couleur: '#2f8cff', score: 0 },
+  { id: 'vert', nom: 'Vert', couleur: '#22d36b', score: 0 }, { id: 'jaune', nom: 'Jaune', couleur: '#ffd21f', score: 0 }];
+let equipes = lire('quiz2-equipes', null) || EQUIPES_DEFAUT.map(e => ({ ...e }));
+const buzz = { ouvert: true, ordre: [], exclues: [], manche: 1 };
+const equipe = id => equipes.find(e => e.id === id);
+let pauseParBuzz = false, jeuCourant = null, glisse = false;
+
+function sauverEquipes() { ecrire('quiz2-equipes', equipes); }
+function rearmer() { buzz.ordre = []; buzz.exclues = []; buzz.ouvert = true; buzz.manche++; pauseParBuzz = false; majBuzz(); }
+function ajouterPoints(id, delta) {
+  const e = equipe(id); if (!e) return;
+  e.score += delta; sauverEquipes(); renduScores(id); diffuser();
+}
+
+function recevoirBuzz(id, joueur) {
+  if (!equipe(id) || !buzz.ouvert || buzz.exclues.includes(id) || buzz.ordre.some(b => b.equipe === id)) return;
+  buzz.ordre.push({ equipe: id, joueur: String(joueur || '').slice(0, 20), t: Date.now() });
+  bip(id, buzz.ordre.length === 1);
+  if (buzz.ordre.length === 1) surPremierBuzz();
+  majBuzz();
+}
+function surPremierBuzz() {
+  const e = equipe(buzz.ordre[0].equipe);
+  const f = $('#flash'); f.style.setProperty('--c', e.couleur); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+  if (jeuCourant && jeuCourant.pauseAuBuzz !== false && $('#pause-auto').checked && !audio.paused) { audio.pause(); pauseParBuzz = true; }
+  jeuCourant && jeuCourant.surBuzz && jeuCourant.surBuzz(e.id);
+}
+function bonneReponse() {
+  const p = buzz.ordre[0]; if (!p) return;
+  ajouterPoints(p.equipe, 1);
+  const reprendre = pauseParBuzz;
+  rearmer();
+  jeuCourant && jeuCourant.surBonne && jeuCourant.surBonne(p.equipe, reprendre);
+}
+function mauvaiseReponse() {
+  const p = buzz.ordre.shift(); if (!p) return;
+  buzz.exclues.push(p.equipe);
+  bipErreur();
+  const fileVide = buzz.ordre.length === 0;
+  if (!fileVide) { bip(buzz.ordre[0].equipe, true); surPremierBuzz(); }
+  else if (pauseParBuzz) { pauseParBuzz = false; audio.play().catch(() => {}); }
+  jeuCourant && jeuCourant.surMauvaise && jeuCourant.surMauvaise(fileVide);
+  majBuzz();
+}
+
+function majBuzz() { renduLumieres(); renduMain(); diffuser();
+  const b = $('#etat-buzz'); b.textContent = buzz.ouvert ? '🔔 Buzzers ouverts' : '🔕 Buzzers fermés'; b.classList.toggle('ferme', !buzz.ouvert); }
+
+function renduLumieres() {
+  const box = $('#lumieres'); box.innerHTML = '';
+  const tel = nbTelephones();
+  equipes.forEach(e => {
+    const rang = buzz.ordre.findIndex(b => b.equipe === e.id);
+    const l = h('div', { class: 'lampe' + (rang >= 0 ? ' allumee' : '') + (rang === 0 ? ' premiere' : '') + (buzz.exclues.includes(e.id) ? ' exclue' : ''), style: '--c:' + e.couleur },
+      h('div', { class: 'bulbe' }), h('div', { class: 'nom' }, e.nom),
+      tel[e.id] ? h('span', { class: 'tel', title: 'téléphones connectés' }, '📱' + tel[e.id]) : null,
+      rang >= 0 ? h('span', { class: 'rang' }, rang + 1) : null);
+    box.append(l);
+  });
+}
+function renduMain() {
+  const m = $('#main-a'), p = buzz.ordre[0];
+  if (!p || !equipe(p.equipe)) { m.classList.remove('visible'); return; }
+  const e = equipe(p.equipe);
+  m.style.setProperty('--c', e.couleur);
+  $('.qui', m).innerHTML = '';
+  $('.qui', m).append('🔔 Équipe ' + e.nom + ' ', p.joueur ? h('small', {}, '· ' + p.joueur) : '',
+    buzz.ordre.length > 1 ? h('small', {}, '   (ensuite : ' + buzz.ordre.slice(1).map(b => (equipe(b.equipe) || {}).nom).join(', ') + ')') : '');
+  m.classList.add('visible');
+}
+function renduScores(bumpId) {
+  const box = $('#liste-scores'); box.innerHTML = '';
+  const max = Math.max(...equipes.map(e => e.score));
+  equipes.forEach((e, i) => {
+    box.append(h('div', { class: 'ligne-score' + (max > 0 && e.score === max ? ' tete' : '') + (bumpId === e.id ? ' bump' : ''), style: '--c:' + e.couleur },
+      h('div', { class: 'couleur' }),
+      h('div', { class: 'milieu' }, h('div', { class: 'nom' }, e.nom), h('div', { class: 'val' }, e.score)),
+      h('div', { class: 'boutons' },
+        h('button', { title: '+1 (touche ' + (i + 1) + ')', onclick: () => ajouterPoints(e.id, 1) }, '+'),
+        h('button', { title: '−1', onclick: () => ajouterPoints(e.id, -1) }, '−'))));
+  });
+}
+
+// Sons d'ambiance (générés, aucun fichier)
+let ctxAudio;
+function sonner(freqs, duree = .18, type = 'square', vol = .18) {
+  try {
+    ctxAudio = ctxAudio || new (window.AudioContext || window.webkitAudioContext)();
+    if (ctxAudio.state === 'suspended') ctxAudio.resume();
+    let t = ctxAudio.currentTime;
+    for (const f of freqs) {
+      const o = ctxAudio.createOscillator(), g = ctxAudio.createGain();
+      o.type = type; o.frequency.value = f; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + duree);
+      o.connect(g).connect(ctxAudio.destination); o.start(t); o.stop(t + duree); t += duree * .8;
+    }
+  } catch (_) {}
+}
+function bip(id, premier) { const i = Math.max(0, equipes.findIndex(e => e.id === id)); const f = 440 * Math.pow(2, (i * 3) / 12); sonner(premier ? [f, f * 1.5, f * 2] : [f], premier ? .16 : .1, 'square', premier ? .2 : .08); }
+function bipErreur() { sonner([220, 160], .25, 'sawtooth', .15); }
+document.addEventListener('pointerdown', () => { try { ctxAudio = ctxAudio || new (window.AudioContext || window.webkitAudioContext)(); ctxAudio.resume(); } catch (_) {} }, { once: true });
+
+// =====================================================================
+//  Connexion des smartphones (PeerJS / WebRTC)
+// =====================================================================
+const LETTRES = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+let SALLE = lire('quiz2-salle', null);
+if (!SALLE) { SALLE = Array.from({ length: 5 }, () => LETTRES[Math.floor(Math.random() * LETTRES.length)]).join(''); ecrire('quiz2-salle', SALLE); }
+let peer = null, relanceP = null;
+const conns = new Set();
+
+function lienBuzzer() { return new URL('buzzer.html?salle=' + SALLE, location.href).href; }
+function nbTelephones() { const n = {}; for (const c of conns) if (c.open && c.equipe) n[c.equipe] = (n[c.equipe] || 0) + 1; return n; }
+function etatPublic() { return { equipes: equipes.map(e => ({ id: e.id, nom: e.nom, couleur: e.couleur })), buzz }; }
+function diffuser() { const m = { type: 'etat', etat: etatPublic() }; for (const c of conns) if (c.open) { try { c.send(m); } catch (_) {} } }
+function statutReseau(txt, ok) { const r = $('#reseau'); r.innerHTML = '<b>●</b> ' + txt; r.classList.toggle('ko', !ok); }
+function majReseau() { const n = [...conns].filter(c => c.open).length; statutReseau(n + ' téléphone' + (n > 1 ? 's' : ''), true); renduLumieres(); }
+
+function demarrerPeer() {
+  if (typeof Peer === 'undefined') { statutReseau('hors ligne (pas d’Internet)', false); return; }
+  if (peer) { try { peer.destroy(); } catch (_) {} }
+  statutReseau('connexion…', false);
+  peer = new Peer('quizmusical-' + SALLE, { debug: 0 });
+  peer.on('open', () => majReseau());
+  peer.on('disconnected', () => { statutReseau('reconnexion…', false); setTimeout(() => { try { peer.reconnect(); } catch (_) {} }, 1500); });
+  peer.on('error', err => {
+    if (err.type === 'unavailable-id') statutReseau('code de salle occupé, nouvel essai…', false);
+    else if (err.type === 'peer-unavailable') return;
+    else statutReseau('réseau : ' + err.type, false);
+    clearTimeout(relanceP); relanceP = setTimeout(demarrerPeer, 4000);
+  });
+  peer.on('connection', c => {
+    c.equipe = '';
+    c.on('open', () => { conns.add(c); try { c.send({ type: 'etat', etat: etatPublic() }); } catch (_) {} majReseau(); });
+    c.on('data', d => {
+      if (!d || typeof d !== 'object') return;
+      if (d.type === 'hello') { c.equipe = String(d.equipe || ''); c.send({ type: 'etat', etat: etatPublic() }); majReseau(); }
+      if (d.type === 'buzz') { c.equipe = String(d.equipe || c.equipe); recevoirBuzz(c.equipe, d.joueur); if (buzz.ordre.length === 0) c.send({ type: 'etat', etat: etatPublic() }); }
+    });
+    const fin = () => { conns.delete(c); majReseau(); };
+    c.on('close', fin); c.on('error', fin);
+  });
+}
+function dessinerQR() {
+  const u = lienBuzzer();
+  $('#salle-mini').textContent = SALLE; $('#code-salle').textContent = SALLE; $('#lien-buzzer').textContent = u.replace(/^https?:\/\//, '');
+  if (location.protocol === 'file:') $('#note-rejoindre').innerHTML = '⚠️ La page est ouverte depuis un fichier : déposez <b>index.html</b> et <b>buzzer.html</b> sur votre hébergement pour que les téléphones puissent se connecter.';
+  if (typeof qrcode === 'undefined') { $('#qr-mini').textContent = 'QR indisponible'; $('#qr-grand').textContent = u; return; }
+  const q = qrcode(0, 'M'); q.addData(u); q.make();
+  $('#qr-mini').innerHTML = q.createSvgTag(4, 0); $('#qr-grand').innerHTML = q.createSvgTag(8, 0);
+}
+$('#btn-rejoindre').onclick = () => ouvrirModale('modale-rejoindre');
+$('#rejoindre-mini').onclick = () => ouvrirModale('modale-rejoindre');
+$('#btn-nouvelle-salle').onclick = () => {
+  if (!confirm('Changer le code de salle ? Tous les téléphones devront rescanner le QR code.')) return;
+  SALLE = Array.from({ length: 5 }, () => LETTRES[Math.floor(Math.random() * LETTRES.length)]).join(''); ecrire('quiz2-salle', SALLE);
+  for (const c of conns) { try { c.close(); } catch (_) {} } conns.clear();
+  dessinerQR(); demarrerPeer();
+};
+
+// =====================================================================
+//  Musiques : dossier local de l'animateur (jamais envoyé en ligne)
+// =====================================================================
+const EXT_AUDIO = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm|mp4)$/i;
+const Musique = {
+  fichiers: new Map(), urls: new Map(), nomDossier: '', poignee: null,
+  liste() { return [...this.fichiers.keys()].sort((a, b) => a.localeCompare(b, 'fr')); },
+  trouver(nom) {
+    if (!nom) return null;
+    if (this.fichiers.has(nom)) return nom;
+    const base = nom.split('/').pop().toLowerCase();
+    return this.liste().find(k => k.split('/').pop().toLowerCase() === base) || null;
+  },
+  deviner(titre, artiste) {
+    const n = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const t = n(titre); if (t.length < 3) return null;
+    const cands = this.liste().filter(k => (' ' + n(k.replace(/\.[^.]+$/, '')) + ' ').includes(' ' + t + ' '));
+    if (cands.length <= 1) return cands[0] || null;
+    const a = n(artiste).split(' ')[0];
+    return cands.find(k => n(k).includes(a)) || cands[0];
+  },
+  url(nom) {
+    const k = this.trouver(nom); if (!k) return null;
+    if (!this.urls.has(k)) this.urls.set(k, URL.createObjectURL(this.fichiers.get(k)));
+    return this.urls.get(k);
+  },
+  vider() { for (const u of this.urls.values()) URL.revokeObjectURL(u); this.urls.clear(); this.fichiers.clear(); },
+  async depuisPoignee(p) {
+    this.vider(); this.poignee = p; this.nomDossier = p.name;
+    const parcourir = async (d, base) => {
+      for await (const [nom, ent] of d.entries()) {
+        const rel = base ? base + '/' + nom : nom;
+        if (ent.kind === 'directory') await parcourir(ent, rel);
+        else if (EXT_AUDIO.test(nom)) this.fichiers.set(rel, await ent.getFile());
+      }
+    };
+    await parcourir(p, ''); majMusique();
+  },
+  depuisInput(files) {
+    this.vider(); this.poignee = null;
+    for (const f of files) {
+      if (!EXT_AUDIO.test(f.name)) continue;
+      const parts = (f.webkitRelativePath || f.name).split('/');
+      if (parts.length > 1) { this.nomDossier = parts[0]; parts.shift(); }
+      this.fichiers.set(parts.join('/'), f);
+    }
+    majMusique();
+  },
+  async choisir() {
+    if (window.showDirectoryPicker) {
+      try { const p = await showDirectoryPicker({ id: 'quiz-musique', mode: 'read' }); await bdEcrire('dossier', p); await this.depuisPoignee(p); }
+      catch (e) { if (e.name !== 'AbortError') $('#input-dossier').click(); }
+    } else $('#input-dossier').click();
+  },
+  async restaurer() {
+    try {
+      const p = await bdLire('dossier'); if (!p || !p.queryPermission) return;
+      if (await p.queryPermission({ mode: 'read' }) === 'granted') await this.depuisPoignee(p);
+      else { this.poignee = p; this.nomDossier = p.name; this.enAttente = true; majMusique(); }
+    } catch (_) {}
+  },
+  async reactiver() {
+    try { if (await this.poignee.requestPermission({ mode: 'read' }) === 'granted') { this.enAttente = false; await this.depuisPoignee(this.poignee); } } catch (_) { this.choisir(); }
+  }
+};
+$('#input-dossier').onchange = e => { Musique.depuisInput(e.target.files); e.target.value = ''; };
+function majMusique() {
+  const box = $('#musique-etat'); box.innerHTML = '';
+  if (Musique.enAttente) box.append('📁 ', h('b', {}, Musique.nomDossier), h('br'), h('button', { class: 'btn mini', style: 'margin-top:6px', onclick: () => Musique.reactiver() }, 'Réactiver le dossier'));
+  else if (Musique.fichiers.size) box.append('📁 ', h('b', {}, Musique.nomDossier || 'Musiques'), ' · ' + Musique.fichiers.size + ' titres', h('br'), h('a', { href: '#', style: 'color:var(--doux);font-size:12px', onclick: e => { e.preventDefault(); Musique.choisir(); } }, 'changer'));
+  else box.append(h('button', { class: 'btn', onclick: () => Musique.choisir() }, '📁 Charger les musiques'), h('div', { style: 'margin-top:6px' }, 'le dossier de MP3 de cet ordinateur'));
+  if ($('#editeur').classList.contains('ouverte')) renduEditeur();
+}
+// petite base IndexedDB pour se souvenir du dossier
+function bd() { return new Promise((ok, ko) => { const r = indexedDB.open('quiz-musical', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); }
+async function bdEcrire(k, v) { const d = await bd(); return new Promise(ok => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = ok; t.onerror = ok; }); }
+async function bdLire(k) { const d = await bd(); return new Promise(ok => { const r = d.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); }
+
+// =====================================================================
+//  Lecteur audio partagé
+// =====================================================================
+const audio = $('#audio');
+const Lecteur = {
+  veilles: [],
+  async jouer(fichier, debut = 0) {
+    if (!fichier) { toast('Aucun fichier audio pour cette chanson (✏️ Préparer).'); return false; }
+    const url = Musique.url(fichier);
+    if (!url) { toast(Musique.fichiers.size ? 'Fichier introuvable dans le dossier : ' + fichier : 'Chargez d’abord le dossier des musiques (colonne de gauche).'); return false; }
+    this.veilles = []; audio.muted = false; this.virt = null;
+    if (audio.dataset.f !== fichier) {
+      audio.src = url; audio.dataset.f = fichier;
+      await new Promise(ok => { audio.onloadedmetadata = ok; audio.onerror = ok; });
+    }
+    audio.currentTime = Number(debut) || 0;
+    try { await audio.play(); } catch (e) { toast('Lecture impossible : ' + e.message); return false; }
+    return true;
+  },
+  quand(t, cb) { this.veilles.push({ t: Number(t), cb }); },
+  stop() { audio.pause(); this.veilles = []; audio.muted = false; pauseParBuzz = false; this.virt = null; },
+  // Mode « sans son » : la musique est jouée ailleurs, un chronomètre remplace la lecture
+  virt: null,
+  demarrerSansSon(debut = 0) { audio.pause(); this.veilles = []; this.virt = { t0: performance.now() / 1000 - (Number(debut) || 0), pauseA: null }; },
+  temps() { const v = this.virt; return v ? (v.pauseA ?? performance.now() / 1000) - v.t0 : audio.currentTime; },
+  enCours() { return this.virt ? this.virt.pauseA == null : !audio.paused; },
+  pause() { if (this.virt) { if (this.virt.pauseA == null) this.virt.pauseA = performance.now() / 1000; } else audio.pause(); },
+  reprendre() { if (this.virt) { if (this.virt.pauseA != null) { this.virt.t0 += performance.now() / 1000 - this.virt.pauseA; this.virt.pauseA = null; } } else audio.play().catch(() => {}); },
+  // Lance la musique si un fichier est disponible, sinon le chronomètre (sans message d'erreur)
+  async lancerChanson(c) {
+    const f = c.fichier && Musique.trouver(c.fichier) ? c.fichier : Musique.deviner(c.titre, c.artiste);
+    if (f && await this.jouer(f, c.debut)) { this.virt = null; return true; }
+    // sinon : musique/<titre-simplifie>.mp3 à côté de index.html (même nom que le fichier de paroles)
+    const url = 'musique/' + nomFichierParoles(c.titre).replace(/\.txt$/, '.mp3');
+    try {
+      const r = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
+      if (r.ok) {
+        this.veilles = []; audio.muted = false; this.virt = null;
+        if (audio.dataset.f !== url) { audio.src = url; audio.dataset.f = url; await new Promise(ok => { audio.onloadedmetadata = ok; audio.onerror = ok; }); }
+        audio.currentTime = Number(c.debut) || 0; await audio.play(); return true;
+      }
+    } catch (_) {}
+    this.demarrerSansSon(0); return true;
+  }
+};
+function boucle() {
+  const t = Lecteur.temps();
+  if (Lecteur.enCours() && Lecteur.veilles.length) {
+    const prets = Lecteur.veilles.filter(v => t >= v.t);
+    if (prets.length) { Lecteur.veilles = Lecteur.veilles.filter(v => t < v.t); prets.forEach(v => v.cb(t)); }
+  }
+  if (jeuCourant && jeuCourant.tic) jeuCourant.tic(t);
+  if (!glisse && audio.duration && !Lecteur.virt) $('#progression').value = Math.round(t / audio.duration * 1000);
+  $('#temps').textContent = (Lecteur.virt ? '⏱ ' : '') + fmt(t); $('#duree').textContent = Lecteur.virt ? 'sans son' : fmt(audio.duration);
+  $('#btn-lecture').textContent = Lecteur.enCours() ? '⏸' : '▶';
+  const cp = $('#chrono-paroles'); const actif = !!(Lecteur.virt || audio.src) && (Lecteur.virt || !audio.paused || t > 0);
+  cp.classList.toggle('actif', actif); if (actif) cp.textContent = '⏱ ' + fmt(t) + (Lecteur.enCours() ? '' : ' (pause)');
+  requestAnimationFrame(boucle);
+}
+$('#progression').addEventListener('input', () => { glisse = true; });
+$('#progression').addEventListener('change', e => { if (audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration; glisse = false; });
+$('#volume').oninput = e => { audio.volume = e.target.value; };
+function basculerLecture() { if (Lecteur.virt) { Lecteur.enCours() ? Lecteur.pause() : Lecteur.reprendre(); return; } if (!audio.src) return; if (audio.paused) { pauseParBuzz = false; audio.play().catch(() => {}); } else audio.pause(); }
+$('#btn-lecture').onclick = basculerLecture;
+
+// =====================================================================
+//  Éléments communs aux jeux
+// =====================================================================
+function enTete(titre, liste, idx, choisir, faits, etiquettes) {
+  const lab = i => etiquettes ? etiquettes[i] : i + 1;
+  if (liste.length > 20) return h('div', { class: 'entete-jeu' }, h('h2', {}, titre),
+    h('div', { class: 'pastilles', style: 'align-items:center' },
+      h('button', { class: 'btn', onclick: () => choisir((idx - 1 + liste.length) % liste.length) }, '◀'),
+      h('span', { class: 'compteur', style: 'font-size:18px;min-width:120px;text-align:center' }, 'Chanson n° ' + lab(idx) + ' (' + (idx + 1) + ' / ' + liste.length + ')' + (faits ? ' · ' + faits.size + ' jouée' + (faits.size > 1 ? 's' : '') : '')),
+      h('button', { class: 'btn', onclick: () => choisir((idx + 1) % liste.length) }, '▶')));
+  return h('div', { class: 'entete-jeu' }, h('h2', {}, titre),
+    h('div', { class: 'pastilles' }, liste.map((_, i) =>
+      h('button', { class: 'pastille' + (i === idx ? ' courant' : '') + (faits && faits.has(i) ? ' fait' : ''), onclick: () => choisir(i) }, lab(i)))));
+}
+const vide = () => h('div', { class: 'vide carte' }, 'Rien à jouer pour l’instant.', h('br'), h('br'), h('button', { class: 'btn plein', onclick: () => ouvrirEditeur() }, '✏️ Préparer ce jeu'));
+const blocReponse = c => h('div', { class: 'reponse apparait' }, h('div', { class: 't' }, '« ' + (c.titre || '?') + ' »'), c.artiste ? h('div', { class: 'a' }, c.artiste) : null);
+
+// ---------------- 1. Nuage de mots ----------------
+// Choisit jusqu'à N mots dans les paroles (fichier paroles/<titre>.txt), sans les mots du titre ni de l'artiste.
+// Les mots rares apparaissent d'abord (plus difficile), les plus fréquents (refrain) à la fin et en plus gros.
+const MOTS_VIDES = new Set(('le la les l de des du d un une et a au aux en dans sur sous par pour avec sans je j tu il elle on nous vous ils elles me m te t se s ' +
+  'ma ta sa mon ton son mes tes ses nos vos leur leurs ce c cet cette ces ca qui que qu quoi dont ou ne n pas plus moins y est es suis sont ai as avons avez ont ' +
+  'etait etre avoir fait mais donc or ni car si comme tout tous toute toutes moi toi lui eux oui non oh ah eh hey yeah yeah la na lalala ouh baby ' +
+  'faire faut fais dit dis dire veux veut voulez peux peut pouvoir sais sait savoir vais va vas aller allez vont viens vient venir vois voit voir ' +
+  'quand alors encore toujours jamais rien bien tres trop aussi meme memes autre autres celui celle ceux cela ceci comment pourquoi parce puis ' +
+  'avais avait etais etait sera serai seras serait aurai aura aurait suis sommes etes fut ete eu deja ici voila juste vraiment peu beaucoup ' +
+  'chaque quelque quelques personne chose choses fois jour jours tant donne donner prends prend mets met dans vers chez entre apres avant depuis ' +
+  'leurs notre votre nous vous elle elles ils lui eux mien tien sien hein ouais okay yeah ohoh wouh ooh lala').split(' '));
+function choisirMotsNuage(texte, c, max) {
+  const n = x => String(x || '').toLowerCase().replace(/œ/g, 'oe').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const interdits = new Set(n(c.titre + ' ' + c.artiste).split(/[^a-z0-9]+/).filter(Boolean));
+  const vus = new Map();
+  for (const brut of String(texte).replace(/\[[^\]]*\]/g, ' ').split(/[^\p{L}\p{N}]+/u)) {
+    const k = n(brut);
+    if (k.length < 4 || MOTS_VIDES.has(k) || interdits.has(k) || /^\d+$/.test(k)) continue;
+    const e = vus.get(k); if (e) e.f++; else vus.set(k, { mot: brut.toLowerCase(), f: 1 });
+  }
+  let liste = melanger([...vus.values()]).sort((a, b) => (b.f + Math.min(b.mot.length, 9) / 6) - (a.f + Math.min(a.mot.length, 9) / 6)).slice(0, max);  // les plus marquants (répétés et longs)
+  liste = melanger(liste).sort((a, b) => a.f - b.f);                                  // rares d'abord
+  const fmax = Math.max(1, ...liste.map(x => x.f));
+  return liste.map(x => ({ mot: x.mot, poids: x.f / fmax }));
+}
+function creerNuage() {
+  const J = { id: 'nuage', nom: 'Nuage de mots', icone: '☁️' };
+  let idx = 0, racine, zone, zoneRep, timer = null, reprise = false, mots = [], n = 0, places = [], btnLancer, compteur, txtNuage = '', vueP = null, btnBascule = null, finT = null;
+  const faits = new Set();
+  let ordre = [], cleOrdre = '';
+  const L = () => {
+    const toutes = CONFIG.nuage.chansons || [];
+    const k = toutes.length + '|' + !!CONFIG.nuage.chansons_aleatoires + '|' + toutes.map(c => c.titre).join('|');
+    if (k !== cleOrdre) { cleOrdre = k; ordre = toutes.map((_, i) => i); if (CONFIG.nuage.chansons_aleatoires) ordre = melanger(ordre); faits.clear(); }
+    return ordre.map(i => toutes[i]);
+  };
+  const PALETTE = ['#ff6fb5', '#9d8bff', '#4fd1ff', '#ffd166', '#7cf29c', '#ff9f5a', '#f5f3ff', '#c38bff'];
+  J.ouvrir = el => { racine = el; idx = Math.min(idx, Math.max(0, L().length - 1)); afficher(); };
+  J.quitter = () => { arreter(); clearTimeout(finT); };
+  async function afficher() {
+    arreter(); racine.innerHTML = '';
+    const nAff = idx, c0 = L()[idx];
+    const txt = c0 ? await FichiersParoles.lire(c0.titre) : '';   // paroles : affichées une fois le nuage terminé
+    if (nAff !== idx) return;
+    racine.innerHTML = ''; txtNuage = txt; vueP = null; clearTimeout(finT);
+    racine.append(enTete('☁️ Nuage de mots', L(), idx, i => { idx = i; afficher(); }, faits, ordre.map(i => i + 1)));
+    const c = L()[idx]; if (!c) { racine.append(vide()); return; }
+    racine.append(h('div', {}, h('span', { class: 'num-chanson' }, 'Chanson n° ' + (ordre[idx] + 1))));
+    const max = Math.max(1, Number(CONFIG.nuage.max_mots) || 20);
+    if (txt && CONFIG.nuage.depuis_paroles === true) mots = choisirMotsNuage(txt, c, max);   // option : mots tirés des paroles
+    else {
+      mots = String(c.mots || '').split(/\n|,/).map(s => s.trim()).filter(Boolean).slice(0, max).map(m => ({ mot: m, poids: null }));
+      if (CONFIG.nuage.aleatoire) mots = melanger(mots);
+    }
+    if (!mots.length) { racine.append(h('div', { class: 'vide carte' }, 'Pas de mots pour cette chanson : ajoutez ses paroles dans le fichier ', h('b', {}, 'paroles/' + nomFichierParoles(c.titre)), ' ou des mots dans ✏️ Préparer.')); return; }
+    n = 0; places = [];
+    zone = h('div', { class: 'nuage' });
+    zoneRep = h('div', { style: 'min-height:90px' });
+    btnLancer = h('button', { class: 'btn plein gros', onclick: () => timer ? arreter() : lancer() }, '▶ Lancer le nuage');
+    compteur = h('span', { class: 'compteur' });
+    btnBascule = h('button', { class: 'btn gros', style: 'display:none', onclick: () => basculerParoles() }, '📜 Paroles');
+    racine.append(zone, zoneRep, h('div', { class: 'commandes' }, btnLancer, btnBascule,
+      h('button', { class: 'btn gros', onclick: motSuivant }, '+1 mot'),
+      h('button', { class: 'btn gros', onclick: () => { arreter(); while (n < mots.length) motSuivant(); } }, 'Tout afficher'),
+      h('button', { class: 'btn gros', onclick: reveler }, '🎉 Révéler'),
+      h('button', { class: 'btn gros', onclick: () => J.nav(1) }, 'Suivant ▶'), compteur));
+    majCompteur();
+  }
+  function majCompteur() { if (compteur) compteur.textContent = n + ' / ' + mots.length + ' mots'; if (btnLancer) btnLancer.textContent = timer ? '⏸ Pause' : (n ? '▶ Continuer' : '▶ Lancer le nuage'); }
+  function lancer() { if (timer || n >= mots.length) return; timer = setInterval(motSuivant, Math.max(.2, Number(CONFIG.nuage.intervalle) || 0.75) * 1000); motSuivant(); majCompteur(); }
+  function arreter() { clearInterval(timer); timer = null; majCompteur(); }
+  function motSuivant() { if (n >= mots.length) { arreter(); return; } placer(mots[n++]); if (n >= mots.length) { arreter(); finNuage(); } majCompteur(); }
+  // nuage terminé : les paroles s'affichent à la place du nuage (bouton pour revoir le nuage)
+  function finNuage() {
+    if (!txtNuage || vueP) return;
+    vueP = vueParoles(txtNuage); if (vueP.vide) { vueP = null; return; }
+    vueP.el.style.display = 'none'; zone.after(vueP.el);
+    clearTimeout(finT); finT = setTimeout(() => basculerParoles(true), 5000);   // 5 s sur le nuage complet
+  }
+  function basculerParoles(afficherParoles) {
+    if (!vueP) return;
+    const montrer = afficherParoles ?? vueP.el.style.display === 'none';
+    vueP.el.style.display = montrer ? '' : 'none'; zone.style.display = montrer ? 'none' : '';
+    btnBascule.style.display = ''; btnBascule.textContent = montrer ? '☁️ Revoir le nuage' : '📜 Paroles';
+  }
+  J.ligne = d => { if (vueP && vueP.el.style.display !== 'none') vueP.ligne(d); };
+  function chevauche(a, b) { const m = 8; return !(a.x + a.w + m < b.x || b.x + b.w + m < a.x || a.y + a.h + m < b.y || b.y + b.h + m < a.y); }
+  function placer(m) {
+    const mot = m.mot, W = zone.clientWidth, H = zone.clientHeight;
+    const s = h('span', { class: 'mot' }, mot);
+    s.style.color = PALETTE[(n - 1) % PALETTE.length]; s.style.visibility = 'hidden';
+    zone.append(s);
+    let taille = m.poids == null ? [30, 38, 46, 56, 68, 84][Math.floor(Math.random() * 6)] : Math.round(28 + m.poids * 52 + Math.random() * 8);
+    for (let essai = 0; essai < 7; essai++) {
+      s.style.fontSize = taille + 'px';
+      const w = s.offsetWidth, hh = s.offsetHeight, a0 = Math.random() * Math.PI * 2;
+      for (let i = 0; i < 2500; i++) {
+        const a = a0 + i * .23, r = i * 1.1;
+        const x = W / 2 + r * Math.cos(a) * 1.5 - w / 2, y = H / 2 + r * Math.sin(a) * .8 - hh / 2;
+        if (r > W) break;
+        if (x < 6 || y < 6 || x + w > W - 6 || y + hh > H - 6) continue;
+        const rect = { x, y, w, h: hh };
+        if (!places.some(p => chevauche(p, rect))) {
+          places.push(rect); s.style.left = x + 'px'; s.style.top = y + 'px'; s.style.visibility = ''; s.classList.add('apparait'); return;
+        }
+      }
+      taille = Math.round(taille * .8);
+    }
+    s.remove();
+  }
+  function reveler() {
+    arreter(); const c = L()[idx]; if (!c) return;
+    while (n < mots.length) motSuivant();
+    zoneRep.innerHTML = ''; zoneRep.append(blocReponse(c)); faits.add(idx);
+    $$pastilles(racine, idx, faits);
+    const f = c.fichier || Musique.deviner(c.titre, c.artiste);
+    if (f) Lecteur.jouer(f, c.debut);
+  }
+  J.surBuzz = () => { if (timer) { arreter(); reprise = true; } };
+  J.surMauvaise = fileVide => { if (fileVide && reprise) { reprise = false; lancer(); } };
+  J.surBonne = () => { reprise = false; reveler(); };
+  J.nav = d => { if (!L().length) return; idx = (idx + d + L().length) % L().length; Lecteur.stop(); afficher(); };
+  return J;
+}
+function $$pastilles(racine, idx, faits) { racine.querySelectorAll('.pastille').forEach((p, i) => p.classList.toggle('fait', faits.has(i) && i !== idx)); }
+
+// ---------------- Visionneuse de paroles : écrans de 10 lignes, flèches ↓ ↑, glissement doux ----------------
+function vueParoles(texte) {
+  const brut = String(texte || '').replace(/\r/g, '').replace(/^\s*\[STOP[^\]]*\]\s*$/gim, '').replace(/^\s*\[\d+:\d{1,2}(?:[.,]\d+)?\]\s*/gm, '').trim();
+  const lignes = []; for (const l of brut.split('\n')) { if (!l.trim() && (!lignes.length || !lignes[lignes.length - 1].trim())) continue; lignes.push(l); }
+  const N = 10, vue = h('div', { class: 'paroles-vue' }), contenu = h('div', { class: 'paroles-defile' });
+  lignes.forEach(l => contenu.append(h('div', {}, l || ' '))); vue.append(contenu);
+  let off = 0;
+  return {
+    el: vue, vide: !lignes.length,
+    ligne(d) {
+      const dernier = Math.floor(Math.max(0, lignes.length - 1) / N) * N;
+      off = Math.max(0, Math.min(dernier, off + (d > 0 ? N : -N)));
+      const top = (contenu.children[off] || { offsetTop: 0 }).offsetTop;
+      contenu.style.transition = 'transform .7s cubic-bezier(.33, 0, .2, 1)'; contenu.style.transform = 'translateY(' + (-top) + 'px)';
+    }
+  };
+}
+// « Titre — Artiste » ou « Titre - Artiste » sur une ligne
+function lireTitreArtiste(l) { const m = String(l).split(/\s+[—–-]\s+/); return { titre: (m[0] || '').trim(), artiste: m.slice(1).join(' - ').trim() }; }
+
+// ---------------- Fichiers de paroles (dossier « paroles/ » à côté de index.html) ----------------
+// Chaque chanson lit paroles/<titre-simplifie>.txt (ex. « Je t'emmène au vent » → paroles/je-t-emmene-au-vent.txt).
+// Lignes commençant par # = commentaires. Ligne vide = nouveau paragraphe. [1:05] en début de paragraphe = affichage à ce moment.
+// [STOP] ou [STOP 1:23] sur une ligne seule = arrêt de la musique (jeu « Terminer les paroles ») ; le paragraphe suivant = paroles à trouver.
+const nomFichierParoles = t => String(t || '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + '.txt';
+const FichiersParoles = {
+  cache: new Map(),
+  async lire(titre) {
+    const nom = nomFichierParoles(titre);
+    if (this.cache.has(nom)) return this.cache.get(nom);
+    let txt = '';
+    try { const r = await fetch('paroles/' + nom, { cache: 'no-cache' }); if (r.ok) txt = (await r.text()).replace(/^﻿/, ''); } catch (_) {}
+    txt = txt.replace(/\r/g, '').split('\n').filter(l => !/^\s*#/.test(l)).join('\n').trim();
+    this.cache.set(nom, txt);
+    return txt;
+  },
+  // pour « Terminer les paroles » : { paragraphes, reponse, arret }
+  async pourParoles(c) {
+    if (String(c.paragraphes || c.avant || '').trim()) return c;
+    const txt = await this.lire(c.titre); if (!txt) return c;
+    const m = /^\s*\[STOP(?:\s+(\d+):(\d{1,2}(?:[.,]\d+)?))?\]\s*$/im.exec(txt);
+    if (!m) return { ...c, paragraphes: txt };
+    const avant = txt.slice(0, m.index).trim(), apres = txt.slice(m.index + m[0].length).trim();
+    const arret = m[1] != null ? Number(m[1]) * 60 + Number(m[2].replace(',', '.')) : 0;
+    return { ...c, paragraphes: avant, reponse: String(c.reponse || '').trim() || apres.split(/\n\s*\n/)[0].replace(/^\s*\[\d+:\d{1,2}(?:[.,]\d+)?\]\s*/, '').trim(), arret: Number(c.arret) > 0 ? c.arret : arret };
+  },
+  // pour le karaoké : texte complet sans [STOP] ni repères de temps
+  async pourKaraoke(c) {
+    const source = String(c.paroles || c.aide || '').trim() || await this.lire(c.titre);
+    if (!source) return c;
+    // chaque ligne peut commencer par son temps [mm:ss] ou [mm:ss.cc] (format « karaoké » LRC)
+    const lignes = [], temps = [];
+    for (const brute of source.replace(/\r/g, '').split('\n')) {
+      if (/^\s*\[STOP[^\]]*\]\s*$/i.test(brute)) continue;
+      const m = /^\s*\[(\d+):(\d{1,2}(?:[.,]\d+)?)\]\s*/.exec(brute);
+      const texte = m ? brute.slice(m[0].length) : brute;
+      lignes.push(texte);
+      if (texte.trim()) temps.push(m ? Number(m[1]) * 60 + Number(m[2].replace(',', '.')) : null);
+    }
+    return { ...c, paroles: lignes.join('\n').replace(/\n{3,}/g, '\n\n').trim(), tempsFichier: temps, source };
+  }
+};
+const aucuneParole = c => h('div', { class: 'vide' }, 'Pas encore de paroles pour cette chanson.', h('br'),
+  'Ajoutez-les dans le fichier ', h('b', {}, 'paroles/' + nomFichierParoles(c.titre)), ' sur le serveur, ou dans ✏️ Préparer.', h('br'), h('br'),
+  h('button', { class: 'btn plein', onclick: () => ouvrirEditeur() }, '✏️ Préparer'));
+
+// ---------------- 2. Terminer les paroles ----------------
+// Paroles saisies par paragraphe (séparés par une ligne vide). Un paragraphe peut commencer par [1:05] :
+// il s'affiche alors tout seul à ce moment de la chanson ; sinon, bouton « Paragraphe suivant ».
+function decouperParagraphes(c) {
+  const brut = String(c.paragraphes || c.avant || '').replace(/\r/g, '').trim();
+  if (!brut) return [];
+  return brut.split(/\n\s*\n/).map(bloc => {
+    const m = /^\s*\[(\d+):(\d{1,2}(?:[.,]\d+)?)\]\s*/.exec(bloc);
+    return m ? { t: Number(m[1]) * 60 + Number(m[2].replace(',', '.')), texte: bloc.slice(m[0].length).trim() } : { t: null, texte: bloc.trim() };
+  }).filter(p => p.texte);
+}
+// Découpe en « pages » d'affichage : un paragraphe par page ; un paragraphe de plus de 6 lignes est coupé par 4 lignes
+function paginer(paras) {
+  const pages = [];
+  for (const p of paras) {
+    const lignes = p.texte.split('\n');
+    if (lignes.length <= 6) { pages.push({ t: p.t, texte: p.texte }); continue; }
+    for (let i = 0; i < lignes.length; i += 4) pages.push({ t: i === 0 ? p.t : null, texte: lignes.slice(i, i + 4).join('\n') });
+  }
+  return pages;
+}
+function creerParoles() {
+  const J = { id: 'paroles', nom: 'Karaoké – garde le rythme', icone: '🥁' };
+  let idx = -1, racine, phase = 'pret', paras = [], vus = 0, zoneTexte, zoneCmd, cur = null, off = 0, offPrec = 0, actuelle = 0;
+  const FENETRE = 10; // lignes affichées en même temps
+  const PAS = 3;     // flèches ↓ ↑ : 3 lignes à chaque appui
+  const faits = new Set();
+  const L = () => CONFIG.paroles.chansons || [];
+  J.ouvrir = el => { racine = el; if (idx >= L().length) idx = -1; idx < 0 ? afficherChoix() : afficher(); };
+  function afficherChoix() {
+    Lecteur.stop(); idx = -1; racine.innerHTML = '';
+    racine.append(h('div', { class: 'entete-jeu' }, h('h2', {}, '🥁 Karaoké – garde le rythme'), h('span', { class: 'compteur', style: 'margin-left:auto;font-size:16px' }, faits.size + ' / ' + L().length + ' chansons jouées')));
+    if (!L().length) { racine.append(vide()); return; }
+    racine.append(h('p', { class: 'note', style: 'margin:0' }, 'À vous de choisir votre chanson !'),
+      h('div', { class: 'artistes' }, L().map((c, i) => h('button', { class: 'artiste', style: faits.has(i) ? 'opacity:.4' : '', onclick: () => { idx = i; phase = 'pret'; afficher(); } },
+        h('span', { class: 'num' }, 'N° ' + (i + 1)), h('b', {}, (faits.has(i) ? '✓ ' : '') + (c.titre || 'Chanson ' + (i + 1))), h('span', {}, c.artiste || '')))));
+  }
+  async function afficher() {
+    Lecteur.stop(); racine.innerHTML = '';
+    const n = idx; const c = await FichiersParoles.pourParoles(L()[idx]); if (n !== idx) return;
+    cur = c; racine.innerHTML = '';
+    paras = paginer(decouperParagraphes(c)); vus = 0; off = 0; offPrec = 0; actuelle = 0;
+    racine.append(h('div', { class: 'entete-jeu' },
+      h('span', { class: 'num-chanson' }, 'N° ' + (idx + 1)), h('h2', {}, '🥁 ' + (c.titre || 'Chanson')), c.artiste ? h('span', { class: 'compteur', style: 'font-size:20px' }, c.artiste) : null,
+      h('div', { class: 'pastilles' }, h('button', { class: 'btn', onclick: afficherChoix }, '↩ Choisir une autre chanson'))));
+    zoneTexte = h('div', { class: 'carte', style: 'flex:1;display:flex;flex-direction:column;justify-content:safe center;gap:18px;min-height:260px;overflow:hidden' });
+    zoneCmd = h('div', { class: 'commandes' });
+    racine.append(zoneTexte, zoneCmd); rendu();
+  }
+  function trous(rep, visible) {
+    let k = 0;
+    return h('div', { class: 'trous' }, String(rep || '').trim().split(/\s+/).filter(Boolean).map(mot =>
+      h('div', { class: 'mot-trou' }, [...mot].map(ch => {
+        const lettre = /[\p{L}\p{N}]/u.test(ch);
+        const d = h('span', { class: 'lettre' + (lettre ? '' : ' ponct') + (visible ? ' vue' : '') }, (visible || !lettre) ? ch : '');
+        if (visible) d.style.animationDelay = (k++ * 45) + 'ms';
+        return d;
+      }))));
+  }
+  function rendu() {
+    const c = cur; zoneTexte.innerHTML = ''; zoneCmd.innerHTML = '';
+    if (!paras.length && !c.reponse) zoneTexte.append(aucuneParole(c));
+    else if (phase === 'pret' && !vus) zoneTexte.append(h('div', { class: 'grand-message', style: 'margin:auto' }, '🎤'), h('p', { class: 'note', style: 'text-align:center;margin:0 0 auto' }, 'Les paroles vont s’afficher… et la musique s’arrêtera : à vous de chanter la suite !'));
+    if (vus >= 1) {
+      const { lignes, debut } = lignesVues();
+      off = Math.max(0, Math.min(off, lignes.length - 1));
+      // toutes les lignes dans une « fenêtre » : le texte glisse vers le haut, sans changer de taille
+      const vue = h('div', { class: 'paroles-vue' }), contenu = h('div', { class: 'paroles-defile' });
+      lignes.forEach(l => contenu.append(h('div', {}, l || '\u00a0')));
+      // à l'arrêt : les cases des mots à trouver arrivent juste après les paroles, sur les lignes 8-9 de l'écran
+      if (phase === 'stop' || phase === 'revele') contenu.append(h('div', { class: 'ligne-trous' }, trous(c.reponse, phase === 'revele')));
+      vue.append(contenu); zoneTexte.append(vue);
+      const haut = i => (contenu.children[Math.min(i, contenu.children.length - 1)] || { offsetTop: 0 }).offsetTop;
+      contenu.style.transition = 'none'; contenu.style.transform = 'translateY(' + (-haut(offPrec)) + 'px)';
+      void contenu.offsetWidth;
+      contenu.style.transition = 'transform .7s cubic-bezier(.33, 0, .2, 1)'; contenu.style.transform = 'translateY(' + (-haut(off)) + 'px)';
+      offPrec = off;
+    }
+    if (phase === 'pret') zoneCmd.append(h('button', { class: 'btn plein gros', onclick: lancer }, '▶ Lancer la chanson'), h('span', { class: 'note' }, 'au même moment que la musique'));
+    if (phase === 'lecture') zoneCmd.append(h('button', { class: 'btn plein gros', onclick: stopper }, Lecteur.virt ? '⏹ Stop : à vous de chanter' : '⏹ Arrêter ici'));
+    if (phase === 'stop') zoneCmd.append(h('button', { class: 'btn plein gros', onclick: reveler }, '👀 Révéler les paroles'));
+    if (phase === 'stop' || phase === 'revele') zoneCmd.append(h('button', { class: 'btn gros', onclick: () => { pauseParBuzz = false; Lecteur.reprendre(); } }, Lecteur.virt ? '▶ Continuer' : '▶ Écouter la suite'));
+    if (phase !== 'pret') zoneCmd.append(h('button', { class: 'btn gros', onclick: () => { phase = 'pret'; afficher(); } }, '↺ Recommencer'));
+  }
+  async function lancer() {
+    const c = cur;
+    await Lecteur.lancerChanson(c);
+    phase = 'lecture';
+    vus = paras.length; off = 0; offPrec = 0; actuelle = 0;
+    if (Number(c.arret) > 0) Lecteur.quand(c.arret, stopper);
+    rendu();
+  }
+  function stopper() { Lecteur.pause(); Lecteur.veilles = []; phase = 'stop'; off = Math.max(0, lignesVues().lignes.length - 7); rendu(); sonner([660, 880], .12, 'triangle', .2); }
+  function reveler() { if (phase === 'lecture') stopper(); phase = 'revele'; faits.add(idx); rendu(); }
+  // toutes les lignes déjà affichées + début de la page en cours
+  function lignesVues() {
+    const lignes = []; let debut = 0;
+    paras.slice(0, vus).forEach((p, i) => { if (i === vus - 1) debut = lignes.length; lignes.push(...p.texte.split('\n')); });
+    return { lignes, debut };
+  }
+  function debutPage(i) { let n = 0; for (let k = 0; k < i; k++) n += paras[k].texte.split('\n').length; return n; }
+  function allerPage(v) { vus = Math.max(vus, v); off = Math.max(0, debutPage(v - 1) - 1); rendu(); }   // garde la dernière ligne
+
+  // ↓ ↑ : écran suivant / précédent (5 lignes par écran)
+  J.ligne = d => {
+    if (idx < 0 || !zoneTexte || !paras.length) return;
+    if (!vus) { vus = paras.length; off = 0; return rendu(); }
+    const n = lignesVues().lignes.length, dernier = Math.floor((n - 1) / FENETRE) * FENETRE;
+    off = Math.max(0, Math.min(dernier, off + (d > 0 ? FENETRE : -FENETRE)));
+    rendu();
+  };
+
+
+  J.surBonne = () => { if (idx >= 0) reveler(); };
+  J.nav = d => { if (!L().length) return; idx = idx < 0 ? 0 : (idx + d + L().length) % L().length; phase = 'pret'; afficher(); };
+  return J;
+}
+
+// ---------------- 3. Blind test ----------------
+function creerBlindTest() {
+  const J = { id: 'blindtest', nom: 'Blind test', icone: '🎧' };
+  let idx = 0, racine, revele = false, disque, eq, zoneRep;
+  const faits = new Set();
+  const L = () => CONFIG.blindtest.chansons || [];
+  J.ouvrir = el => { racine = el; idx = Math.min(idx, Math.max(0, L().length - 1)); afficher(); };
+  function afficher() {
+    racine.innerHTML = ''; revele = false;
+    racine.append(enTete('🎧 Blind test', L(), idx, i => { idx = i; Lecteur.stop(); afficher(); }, faits));
+    const c = L()[idx]; if (!c) { racine.append(vide()); return; }
+    disque = h('div', { class: 'disque' }); eq = h('div', { class: 'egaliseur' }, Array.from({ length: 9 }, () => h('i')));
+    zoneRep = h('div', { style: 'min-height:110px;text-align:center' }, h('span', { class: 'num-chanson' }, 'Extrait n° ' + (idx + 1) + ' / ' + L().length));
+    racine.append(h('div', { class: 'disque-zone' }, disque, eq), zoneRep,
+      h('div', { class: 'commandes' },
+        h('button', { class: 'btn plein gros', onclick: () => Lecteur.jouer(c.fichier, c.debut) }, '▶ Lancer l’extrait'),
+        h('button', { class: 'btn gros', onclick: reveler }, '🎉 Révéler'),
+        h('button', { class: 'btn gros', onclick: () => J.nav(1) }, 'Suivant ▶')));
+  }
+  function reveler() { const c = L()[idx]; if (!c || revele) return; revele = true; zoneRep.innerHTML = ''; zoneRep.append(blocReponse(c)); faits.add(idx); $$pastilles(racine, idx, faits); }
+  J.tic = () => { const joue = !audio.paused && !!audio.src; disque && disque.classList.toggle('tourne', joue); eq && eq.classList.toggle('actif', joue); };
+  J.surBonne = (_, reprendre) => { reveler(); if (reprendre) audio.play().catch(() => {}); };
+  J.nav = d => { if (!L().length) return; idx = (idx + d + L().length) % L().length; Lecteur.stop(); afficher(); };
+  return J;
+}
+
+// ---------------- 4. Karaoké « garde le rythme » ----------------
+// Les paroles s'affichent ; vers le 50e mot, 7 ou 8 mots sont remplacés par des ____ (une barre par lettre).
+function preparerTrou(c) {
+  const texte = String(c.paroles || c.aide || '').replace(/\r/g, '').trim();
+  const morceaux = texte.split(/([\p{L}\p{N}]+)/u); // indices impairs = mots
+  const mots = []; for (let i = 1; i < morceaux.length; i += 2) mots.push(i);
+  if (!mots.length) return { morceaux, debut: -1, fin: -1, total: 0 };
+  let n = Number(c.trou_nb) > 0 ? Math.round(Number(c.trou_nb)) : 7 + Math.floor(Math.random() * 2);
+  let d = Math.max(0, (Number(c.trou_debut) > 0 ? Math.round(Number(c.trou_debut)) : 50) - 1);
+  // on cale le trou sur un début de ligne si possible (jusqu'à 15 mots plus loin)
+  for (let k = d; k < Math.min(mots.length, d + 15); k++) { const avantMot = morceaux.slice(0, mots[k]).join(''); if (/\n\s*$/.test(avantMot)) { d = k; break; } }
+  if (d + n > mots.length) d = Math.max(0, mots.length - n);
+  n = Math.min(n, mots.length - d);
+  return { morceaux, mots, debut: d, fin: d + n - 1, total: mots.length };
+}
+// =====================================================================
+//  Karaoké synchronisé : outils communs (jeux 3 et 5)
+// =====================================================================
+// temps de chaque ligne, enregistrés une fois par chanson (servent aux jeux 3 et 5)
+const Synchro = {
+  cle: c => nomFichierParoles(c.titre),
+  lire(c) { const t = (CONFIG.synchro || {})[this.cle(c)]; return Array.isArray(t) && t.filter(x => x != null).length >= 2 ? t : null; },
+  sauver(c, tps) { CONFIG.synchro = CONFIG.synchro || {}; CONFIG.synchro[this.cle(c)] = tps; ecrire('quiz2-config', CONFIG); },
+  fmt: t => String(Math.floor(t / 60)).padStart(2, '0') + ':' + (t % 60).toFixed(2).padStart(5, '0'),
+  texte(paroles, tps) { let k = 0; return paroles.split('\n').map(l => l.trim() ? (tps[k++] != null ? '[' + Synchro.fmt(tps[k - 1]) + '] ' : '') + l : l).join('\n'); },
+  async copier(paroles, tps, c) {
+    try { await navigator.clipboard.writeText(this.texte(paroles, tps)); toast('Paroles synchronisées copiées : collez-les dans paroles/' + nomFichierParoles(c.titre) + ' (sous les lignes #).'); }
+    catch (_) { toast('Copie impossible dans ce navigateur.'); }
+  }
+};
+// fenêtre de 10 lignes ; la ligne chantée (orange gras) reste vers la 3e ligne
+function vueKaraoke(paroles) {
+  const lignes = paroles.split('\n').filter(l => l.trim());
+  const vue = h('div', { class: 'paroles-vue' }), contenu = h('div', { class: 'paroles-defile', style: 'transition:transform .5s ease' });
+  lignes.forEach(l => contenu.append(h('div', {}, l))); vue.append(contenu);
+  let actu = -2;
+  const haut = i => (contenu.children[Math.min(i, contenu.children.length - 1)] || { offsetTop: 0 }).offsetTop;
+  const V = { el: vue, n: lignes.length,
+    aller(k, attenuer) {
+      if (k === actu) return; actu = k;
+      [...contenu.children].forEach((d, i) => { d.classList.toggle('actuelle', i === k); d.style.opacity = attenuer && i > k + 1 ? '.45' : ''; });
+      contenu.style.transform = 'translateY(' + (-haut(Math.max(0, k - 2))) + 'px)';
+    },
+    suivre(t, tps) { let k = -1; for (let i = 0; i < tps.length; i++) if (tps[i] != null && tps[i] <= t) k = i; V.aller(k); } };
+  return V;
+}
+
+function creerKaraoke() {
+  const J = { id: 'karaoke', nom: 'N’oubliez pas les paroles', icone: '🎤', pauseAuBuzz: false };
+  let idx = -1, racine, phase = 'pret', finCoupure = 0, trou = null, revele = false, zoneTexte, zoneEtat, zoneCmd, chrono, cur = null, page = 0, nbPages = 0, pageTrou = 0, off = 0, cible = 0, nbLignes = 0, actuelle = 0, offPrecK = 0, contenuK = null, ligneTrou = -1;
+  let temps = [], rec = [], recIdx = -1, lignesRec = [];   // karaoké synchronisé
+  const FENETRE = 10;
+  const synchro = () => temps.filter(t => t != null).length >= 2;
+  const faits = new Set();
+  const L = () => CONFIG.karaoke.chansons || [];
+  J.ouvrir = el => { racine = el; if (idx >= L().length) idx = -1; idx < 0 ? afficherChoix() : afficher(); };
+  function afficherChoix() {
+    Lecteur.stop(); idx = -1; racine.innerHTML = '';
+    racine.append(h('div', { class: 'entete-jeu' }, h('h2', {}, '🎤 N’oubliez pas les paroles'), h('span', { class: 'compteur', style: 'margin-left:auto;font-size:16px' }, faits.size + ' / ' + L().length + ' chansons jouées')));
+    if (!L().length) { racine.append(vide()); return; }
+    racine.append(h('p', { class: 'note', style: 'margin:0' }, 'À vous de choisir votre chanson !'),
+      h('div', { class: 'artistes' }, L().map((c, i) => h('button', { class: 'artiste', style: faits.has(i) ? 'opacity:.4' : '', onclick: () => { idx = i; afficher(); } },
+        h('span', { class: 'num' }, 'N° ' + (i + 1)), h('b', {}, (faits.has(i) ? '✓ ' : '') + (c.titre || 'Chanson ' + (i + 1))), h('span', {}, c.artiste || '')))));
+  }
+  async function afficher() {
+    Lecteur.stop(); racine.innerHTML = ''; phase = 'pret'; revele = false;
+    const n = idx; const c = await FichiersParoles.pourKaraoke(L()[idx]); if (n !== idx) return;
+    cur = c; racine.innerHTML = ''; trou = preparerTrou(c); page = 0; off = 0; cible = 0; actuelle = -1; offPrecK = 0;
+    const enreg = L()[idx].temps; temps = Array.isArray(enreg) && enreg.filter(t => t != null).length >= 2 ? enreg : (Synchro.lire(c) || c.tempsFichier || []);
+    racine.append(h('div', { class: 'entete-jeu' },
+      h('span', { class: 'num-chanson' }, 'N° ' + (idx + 1)), h('h2', {}, '🎤 ' + (c.titre || 'Chanson')), c.artiste ? h('span', { class: 'compteur', style: 'font-size:20px' }, c.artiste) : null,
+      h('div', { class: 'pastilles' }, h('button', { class: 'btn', onclick: afficherChoix }, '↩ Choisir une autre chanson'))));
+    zoneEtat = h('div', { class: 'reponse', style: 'min-height:56px' });
+    zoneTexte = h('div', { class: 'carte', style: 'flex:1;overflow:hidden;min-height:240px;display:flex;flex-direction:column;justify-content:safe center' });
+    zoneCmd = h('div', { class: 'commandes' });
+    racine.append(zoneEtat, zoneTexte, zoneCmd); rendu();
+  }
+  function texteAvecTrou() {
+    const box = h('div', { class: 'paroles-avant', style: 'text-align:center' });
+    if (trou.total === 0) { box.append(aucuneParole(cur)); nbPages = 0; return box; }
+    const { morceaux, mots, debut, fin } = trou;
+    const limite = revele ? morceaux.length : mots[fin] + 1; // avant la révélation, rien après le trou
+    // 1. construire les lignes
+    const lignes = [[]];
+    for (let i = 0; i < limite; i++) {
+      const m = morceaux[i]; if (!m) continue;
+      if (i % 2 === 0) { m.split('\n').forEach((part, k) => { if (k > 0) lignes.push([]); if (part) lignes[lignes.length - 1].push(document.createTextNode(part)); }); continue; }
+      const rang = mots.indexOf(i);
+      if (rang >= debut && rang <= fin) { const sp = h('span', { class: 'trou-mot' + (revele ? ' vu' : '') }, revele ? m : '_'.repeat([...m].length)); sp.dataset.trou = '1'; lignes[lignes.length - 1].push(sp); }
+      else lignes[lignes.length - 1].push(h('span', { style: revele && i > mots[fin] ? 'opacity:.45' : '' }, m));
+    }
+    // 2. regrouper en pages (ligne vide = nouveau paragraphe ; plus de 6 lignes = pages de 4 lignes)
+    const blocs = []; let bloc = [];
+    for (const l of lignes) { const vide = !l.some(n => (n.textContent || '').trim()); if (vide) { if (bloc.length) blocs.push(bloc); bloc = []; } else bloc.push(l); }
+    if (bloc.length) blocs.push(bloc);
+    const pages = [];
+    for (const bl of blocs) { if (bl.length <= 6) pages.push(bl); else for (let i = 0; i < bl.length; i += 4) pages.push(bl.slice(i, i + 4)); }
+    nbPages = pages.length;
+    pageTrou = Math.max(0, pages.findIndex(pg => pg.some(l => l.some(n => n.dataset && n.dataset.trou))));
+    const plat = pages.flat(), debuts = []; let acc = 0; pages.forEach(pg => { debuts.push(acc); acc += pg.length; });
+    nbLignes = plat.length;
+    cible = null;
+    off = Math.max(0, Math.min(off, nbLignes - 1));
+    page = 0; for (let p = 0; p < nbPages; p++) if (debuts[p] <= off + 1) page = p;
+    // fenêtre de lignes visibles ; les lignes d'avant la page en cours sont estompées
+    // toutes les lignes dans une fenêtre de 5 lignes qui glisse doucement
+    const vue = h('div', { class: 'paroles-vue' }), contenu = h('div', { class: 'paroles-defile' });
+    plat.forEach((l, k) => { const d = h('div', { class: k === actuelle && synchro() ? 'actuelle' : '' }); l.forEach(n => d.append(n)); contenu.append(d); });
+    vue.append(contenu); box.append(vue);
+    const trouVisible = plat.slice(off, off + FENETRE).some(l => l.some(n => n.dataset && n.dataset.trou));
+    if (!revele && trouVisible) box.append(h('span', { class: 'note', style: 'display:block;margin-top:14px;font-size:16px' }, '… ' + (fin - debut + 1) + ' mots à chanter'));
+    ligneTrou = plat.findIndex(l => l.some(n => n.dataset && n.dataset.trou));
+    contenuK = contenu;
+    return box;
+  }
+  // principe du karaoké : la ligne en gras descend jusqu'à la 3e ligne de l'écran, ensuite c'est le texte qui remonte
+  // ↓ ↑ : écran suivant / précédent (5 lignes par écran)
+  // débuts d'écran : 0, puis des écrans de 10 lignes calés pour que le premier mot caché soit sur la 8e ligne
+  function debutsEcrans() {
+    const set = new Set([0]);
+    if (ligneTrou >= 0 && !revele) { for (let o = ligneTrou - 7; o > 0; o -= FENETRE) set.add(o); for (let o = ligneTrou - 7 + FENETRE; o < nbLignes; o += FENETRE) set.add(o); }
+    else for (let o = FENETRE; o < nbLignes; o += FENETRE) set.add(o);
+    return [...set].filter(o => o >= 0 && o < nbLignes).sort((a, b) => a - b);
+  }
+  J.ligne = d => {
+    if (idx < 0 || !zoneTexte || !nbLignes) return;
+    const ds = debutsEcrans();
+    const suiv = d > 0 ? ds.find(o => o > off) : [...ds].reverse().find(o => o < off);
+    if (suiv != null) { off = suiv; rendu(); }
+  };
+  function rendu() {
+    if (phase === 'rec') return renduRec();
+    const c = cur; zoneTexte.innerHTML = ''; zoneCmd.innerHTML = ''; zoneEtat.innerHTML = '';
+    zoneTexte.classList.toggle('karaoke-coupure', phase === 'coupure');
+    contenuK = null; zoneTexte.append(texteAvecTrou());
+    if (contenuK) {   // glissement de l'ancienne position vers la nouvelle
+      const ct = contenuK, haut = i => (ct.children[Math.min(i, ct.children.length - 1)] || { offsetTop: 0 }).offsetTop;
+      ct.style.transition = 'none'; ct.style.transform = 'translateY(' + (-haut(offPrecK)) + 'px)'; void ct.offsetWidth;
+      ct.style.transition = 'transform .7s cubic-bezier(.33, 0, .2, 1)'; ct.style.transform = 'translateY(' + (-haut(off)) + 'px)';
+      offPrecK = off;
+    }
+    if (phase === 'coupure') { chrono = h('span', { class: 'chrono-geant', style: 'font-size:48px' }); zoneEtat.append(h('span', { class: 'grand-message', style: 'font-size:40px' }, '🎤 À VOUS DE CHANTER ! '), chrono); }
+    if (phase === 'retour') zoneEtat.append(h('div', { class: 'grand-message', style: 'font-size:34px' }, Lecteur.virt ? '🎶 Alors, dans le rythme ?' : '🔊 Le son revient… dans le rythme ?'));
+    if (phase === 'stop') zoneEtat.append(h('div', { class: 'grand-message', style: 'font-size:40px' }, '🎤 À VOUS : chantez les mots cachés !'));
+    if (phase === 'lecture' && synchro()) zoneEtat.append(h('div', { class: 'note' }, '🎵 Les paroles suivent la chanson' + (revele ? '' : ' ; arrêt automatique sur les mots cachés')));
+    else if (phase === 'lecture') zoneEtat.append(h('div', { class: 'note' }, Number(c.coupure) ? (Lecteur.virt ? 'Passage à chanter à ' : 'Coupure du son à ') + fmt(c.coupure) : (Lecteur.virt ? 'Cliquez « À vous de chanter » au moment du trou' : 'Coupez le son au moment du trou')));
+    zoneCmd.append(h('button', { class: 'btn plein gros', onclick: lancer }, phase === 'pret' ? '▶ Lancer la chanson' : '↺ Relancer'));
+    if (phase === 'pret') zoneCmd.append(h('span', { class: 'note' }, synchro() ? '🎵 paroles synchronisées' : 'au même moment que la musique'));
+    if (phase === 'stop') zoneCmd.append(h('button', { class: 'btn gros', onclick: () => { phase = 'lecture'; Lecteur.reprendre(); rendu(); } }, '▶ Reprendre la chanson'));
+    if ((phase === 'lecture' || phase === 'retour') && !synchro()) zoneCmd.append(h('button', { class: 'btn gros', onclick: couper }, Lecteur.virt ? '🎤 À vous de chanter' : '🔇 Couper le son'));
+    if (phase === 'coupure') zoneCmd.append(h('button', { class: 'btn gros', onclick: retablir }, Lecteur.virt ? '⏭ Fin du passage' : '🔊 Remettre le son'));
+    if (!revele && trou.total) zoneCmd.append(h('button', { class: 'btn gros', onclick: reveler }, '👀 Révéler les mots'));
+    if (revele) zoneCmd.append(h('button', { class: 'btn gros', onclick: () => { trou = preparerTrou(cur); revele = false; rendu(); } }, '🎲 Autres mots cachés'));
+    if (phase === 'pret' && trou.total) zoneCmd.append(h('button', { class: 'btn', onclick: demarrerRec, title: 'Écoutez la chanson et appuyez sur Espace au début de chaque ligne' }, synchro() ? '⏺ Refaire la synchronisation' : '⏺ Synchroniser les paroles'));
+  }
+  // ---- enregistrement des temps : Espace (ou ↓) au début de chaque ligne, ↑ pour annuler
+  async function demarrerRec() {
+    lignesRec = cur.paroles.split('\n').filter(l => l.trim()); rec = []; recIdx = -1; off = 0; offPrecK = 0;
+    phase = 'rec'; await Lecteur.lancerChanson({ ...cur, debut: 0 }); rendu();
+  }
+  function renduRec() {
+    zoneTexte.innerHTML = ''; zoneCmd.innerHTML = ''; zoneEtat.innerHTML = '';
+    zoneEtat.append(h('div', { class: 'note', style: 'font-size:18px' }, '⏺ Synchronisation : appuyez sur ', h('kbd', {}, 'Espace'), ' (ou ↓) au moment où chaque ligne commence · ↑ annule la dernière · ligne ' + (recIdx + 1) + ' / ' + lignesRec.length));
+    const vue = h('div', { class: 'paroles-vue' }), contenu = h('div', { class: 'paroles-defile' });
+    lignesRec.forEach((l, k) => contenu.append(h('div', { class: k === recIdx ? 'actuelle' : '', style: k > recIdx + 1 ? 'opacity:.5' : '' }, (rec[k] != null ? '' : '') + l)));
+    vue.append(contenu); zoneTexte.append(vue);
+    off = Math.max(0, recIdx - 2);
+    const haut = i => (contenu.children[Math.min(i, contenu.children.length - 1)] || { offsetTop: 0 }).offsetTop;
+    contenu.style.transition = 'none'; contenu.style.transform = 'translateY(' + (-haut(offPrecK)) + 'px)'; void contenu.offsetWidth;
+    contenu.style.transition = 'transform .35s ease'; contenu.style.transform = 'translateY(' + (-haut(off)) + 'px)'; offPrecK = off;
+    zoneCmd.append(h('button', { class: 'btn vert gros', onclick: terminerRec }, '✓ Terminer et enregistrer'), h('button', { class: 'btn gros', onclick: () => { Lecteur.stop(); afficher(); } }, '✗ Annuler'));
+  }
+  function marquer() { if (recIdx + 1 >= lignesRec.length) return; recIdx++; rec[recIdx] = Math.round(Lecteur.temps() * 100) / 100; renduRec(); if (recIdx + 1 >= lignesRec.length) toast('Dernière ligne marquée : cliquez « Terminer et enregistrer ».'); }
+  function annulerMarque() { if (recIdx < 0) return; rec[recIdx] = undefined; recIdx--; renduRec(); }
+  const fmtLrc = t => String(Math.floor(t / 60)).padStart(2, '0') + ':' + (t % 60).toFixed(2).padStart(5, '0');
+  function terminerRec() {
+    Lecteur.stop();
+    const tps = lignesRec.map((_, k) => rec[k] ?? null);
+    if (tps.filter(t => t != null).length < 2) { toast('Pas assez de lignes marquées.'); return afficher(); }
+    L()[idx].temps = tps; Synchro.sauver(cur, tps);
+    // texte avec les temps, à coller dans le fichier de paroles pour le garder sur le serveur
+    let k = 0; const avecTemps = cur.paroles.split('\n').map(l => l.trim() ? (tps[k++] != null ? '[' + fmtLrc(tps[k - 1]) + '] ' : '') + l : l).join('\n');
+    afficher().then(() => {
+      zoneCmd.append(h('button', { class: 'btn', onclick: async () => {
+        try { await navigator.clipboard.writeText(avecTemps); toast('Paroles synchronisées copiées : collez-les dans paroles/' + nomFichierParoles(cur.titre) + ' (sous les lignes #).'); }
+        catch (_) { toast('Copie impossible dans ce navigateur.'); }
+      } }, '📋 Copier les paroles synchronisées'));
+      toast('Synchronisation enregistrée sur cet ordinateur ✓');
+    });
+  }
+  async function lancer() {
+    const c = cur;
+    actuelle = -1; off = 0;
+    await Lecteur.lancerChanson(c);
+    phase = 'lecture'; rendu();
+    if (!synchro() && Number(c.coupure) > 0) Lecteur.quand(c.coupure, couper);
+  }
+  function couper() {
+    const c = cur;
+    if (!Lecteur.virt) { if (audio.paused && audio.src) audio.play().catch(() => {}); audio.muted = true; }
+    else if (!Lecteur.enCours()) Lecteur.reprendre();
+    phase = 'coupure';
+    finCoupure = Lecteur.temps() + (Number(c.duree) || 8);
+    Lecteur.veilles = []; Lecteur.quand(finCoupure, retablir); rendu();
+  }
+  function retablir() { audio.muted = false; Lecteur.veilles = []; phase = 'retour'; rendu(); }
+  function reveler() { revele = true; faits.add(idx); rendu(); }
+  J.quitter = () => { audio.muted = false; if (phase === 'rec') Lecteur.stop(); };
+  J.tic = t => {
+    if (phase === 'coupure' && chrono) chrono.textContent = Math.max(0, Math.ceil(finCoupure - t));
+    // karaoké : la ligne chantée suit la chanson, la ligne en cours reste vers la 3e ligne de l'écran
+    if (phase === 'lecture' && synchro() && Lecteur.enCours()) {
+      let k = -1; for (let i = 0; i < temps.length; i++) if (temps[i] != null && temps[i] <= t) k = i;
+      if (k !== actuelle) {
+        actuelle = k; off = Math.max(0, k - 2);
+        if (!revele && ligneTrou >= 0 && k >= ligneTrou) { Lecteur.pause(); phase = 'stop'; sonner([660, 880], .12, 'triangle', .2); }
+        rendu();
+      }
+    }
+  };
+  J.clavier = key => {
+    if (phase !== 'rec') return false;
+    if (key === ' ' || key === 'ArrowDown') { marquer(); return true; }
+    if (key === 'ArrowUp') { annulerMarque(); return true; }
+    return false;
+  };
+  J.surBonne = () => { if (idx >= 0) reveler(); };
+  J.nav = d => { if (!L().length) return; idx = idx < 0 ? 0 : (idx + d + L().length) % L().length; afficher(); };
+  return J;
+}
+
+// ---------------- 5. Chacun son tour ----------------
+function normaliser(s) {
+  return String(s || '').toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/&/g, ' et ').replace(/['’`´]/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+const cle = s => normaliser(String(s || '').replace(/\([^)]*\)/g, ' ')).replace(/^(le|la|les|l|un|une|des|the) /, '');
+function distance(a, b) {
+  const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let prec = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prec[j] + 1, cur[j - 1] + 1, prec[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prec = cur; }
+  return prec[n];
+}
+function chercherTitre(saisie, titres) {
+  const q = cle(saisie); if (!q) return { type: 'aucun' };
+  let meilleur = null, dMin = Infinity, partiel = null;
+  for (const t of titres) {
+    const k = cle(t);
+    if (k === q) return { type: 'exact', titre: t };
+    const d = distance(q, k); if (d < dMin) { dMin = d; meilleur = t; }
+    if (!partiel && q.length >= 4 && (k.includes(q) || q.includes(k))) partiel = t;
+    if (!partiel) { const mq = q.split(' ').filter(w => w.length > 2), mk = new Set(k.split(' ')); if (mq.length >= 2 && mq.filter(w => mk.has(w)).length / mq.length >= .6) partiel = t; }
+  }
+  if (meilleur) { const lg = Math.max(q.length, cle(meilleur).length); const seuil = lg <= 4 ? 0 : lg <= 9 ? 1 : Math.round(lg * .2); if (dMin <= seuil) return { type: 'proche', titre: meilleur }; }
+  if (partiel) return { type: 'partiel', titre: partiel };
+  return { type: 'aucun' };
+}
+function creerChacun() {
+  const J = { id: 'chacun', nom: 'Chacun son tour', icone: '🔁', pauseAuBuzz: false };
+  let racine, artiste = null, ordre = [], elimines = new Set(), courant = 0, cites = [], finChrono = 0, chronoPause = 0, chronoTimer = null, annulable = null;
+  let elTours, elEquipe, elBarre, elInput, elVerdict, elCites, elPause;
+  const C = () => CONFIG.chacun;
+  J.ouvrir = el => { racine = el; artiste ? afficherJeu() : afficherChoix(); };
+  J.quitter = () => { clearInterval(chronoTimer); chronoTimer = null; };
+  function afficherChoix() {
+    J.quitter(); artiste = null; racine.innerHTML = '';
+    racine.append(h('div', { class: 'entete-jeu' }, h('h2', {}, '🔁 Chacun son tour')),
+      h('p', { class: 'note' }, 'Choisissez l’artiste. Chaque équipe cite à tour de rôle un titre de cet artiste ; l’animateur tape le titre pour le vérifier.' + (C().elimination ? ' Une erreur, un doublon ou le temps écoulé = équipe éliminée.' : '')));
+    const arts = C().artistes || [];
+    if (!arts.length) { racine.append(vide()); return; }
+    racine.append(h('div', { class: 'artistes' }, arts.map(a => h('button', { class: 'artiste', onclick: () => demarrer(a) }, h('b', {}, a.nom), h('span', {}, (a.titres || []).length + ' titres dans la liste')))));
+  }
+  function demarrer(a) {
+    artiste = a; ordre = equipes.map(e => e.id); elimines = new Set(); courant = 0; cites = []; annulable = null;
+    afficherJeu(); relancerChrono();
+  }
+  function afficherJeu() {
+    racine.innerHTML = '';
+    elTours = h('div', { class: 'tours' }); elEquipe = h('div', { class: 'equipe-courante' });
+    elBarre = h('div', { class: 'barre-chrono', style: C().duree_tour > 0 ? '' : 'display:none' }, h('i', { style: 'width:100%' }));
+    elInput = h('input', { placeholder: 'Titre donné par l’équipe… puis Entrée', autocomplete: 'off', onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); verifier(); } } });
+    elVerdict = h('div', { class: 'verdict' }); elCites = h('div', { class: 'cites' });
+    elPause = h('button', { class: 'btn', onclick: basculerChrono }, '⏸ Chrono');
+    racine.append(
+      h('div', { class: 'entete-jeu' }, h('h2', {}, '🔁 ' + artiste.nom),
+        h('div', { class: 'pastilles' }, elPause,
+          h('button', { class: 'btn', onclick: () => suivant() }, '⏭ Passer'),
+          h('button', { class: 'btn', onclick: () => eliminer() }, '✗ Éliminer l’équipe'),
+          h('button', { class: 'btn', onclick: () => { if (confirm('Recommencer la manche ?')) demarrer(artiste); } }, '↺ Recommencer'),
+          h('button', { class: 'btn', onclick: afficherChoix }, 'Changer d’artiste'))),
+      elTours, elEquipe, elBarre,
+      h('div', { class: 'saisie' }, elInput, h('button', { class: 'btn plein gros', onclick: verifier }, 'Vérifier')),
+      elVerdict, h('h3', { class: 'note', style: 'text-align:center;margin:6px 0 0' }, 'Titres déjà cités'), elCites);
+    majTours(); majCites(); setTimeout(() => elInput.focus(), 50);
+  }
+  const actifs = () => ordre.filter(id => !elimines.has(id) && equipe(id));
+  const idCourant = () => ordre[courant];
+  function majTours() {
+    elTours.innerHTML = '';
+    ordre.forEach((id, i) => { const e = equipe(id); if (!e) return; elTours.append(h('span', { class: 'tour' + (i === courant ? ' courant' : '') + (elimines.has(id) ? ' elimine' : ''), style: '--c:' + e.couleur }, e.nom)); });
+    const e = equipe(idCourant());
+    if (e) { elEquipe.style.setProperty('--c', e.couleur); elEquipe.textContent = 'Au tour de ' + e.nom; }
+  }
+  function majCites() {
+    elCites.innerHTML = '';
+    if (!cites.length) elCites.append(h('span', { class: 'note' }, 'aucun pour l’instant'));
+    cites.slice().reverse().forEach(c => elCites.append(h('span', { class: 'cite', style: '--c:' + ((equipe(c.equipe) || {}).couleur || '#888') }, c.titre)));
+  }
+  function verdict(classe, texte, boutons = []) { elVerdict.className = 'verdict ' + classe; elVerdict.innerHTML = ''; elVerdict.append(h('div', {}, texte)); if (boutons.length) elVerdict.append(h('div', { class: 'commandes' }, boutons)); }
+  function verifier() {
+    const saisie = elInput.value.trim(); if (!saisie || !idCourant()) return;
+    const r = chercherTitre(saisie, artiste.titres || []);
+    const titre = r.titre || saisie;
+    const deja = cites.find(c => cle(c.titre) === cle(titre));
+    if (deja) {
+      pauseChrono(true); bipErreur();
+      verdict('ko', '🔁 « ' + deja.titre + ' » a déjà été cité !', [
+        h('button', { class: 'btn rouge', onclick: () => refuser() }, C().elimination ? '✗ Éliminer' : '✗ Refuser'),
+        h('button', { class: 'btn', onclick: () => { verdict('', ''); elInput.value = ''; elInput.focus(); pauseChrono(false); } }, 'Laisser réessayer')]);
+      return;
+    }
+    if (r.type === 'exact' || r.type === 'proche') return valider(r.titre);
+    pauseChrono(true);
+    if (r.type === 'partiel') {
+      verdict('info', 'Vouliez-vous dire « ' + r.titre + ' » ?', [
+        h('button', { class: 'btn vert', onclick: () => valider(r.titre) }, '✓ Oui, valider'),
+        h('button', { class: 'btn rouge', onclick: () => refuser() }, '✗ Non, refuser'),
+        h('button', { class: 'btn', onclick: () => valider(saisie) }, 'Valider « ' + saisie + ' »')]);
+    } else {
+      bipErreur();
+      verdict('ko', '✗ « ' + saisie + ' » n’est pas dans la liste de ' + artiste.nom, [
+        h('button', { class: 'btn', onclick: () => valider(saisie, true) }, '✓ Valider quand même'),
+        h('button', { class: 'btn rouge', onclick: () => refuser() }, C().elimination ? '✗ Refuser et éliminer' : '✗ Refuser')]);
+    }
+  }
+  function valider(titre, ajouterListe) {
+    const id = idCourant();
+    if (ajouterListe && !(artiste.titres || []).some(t => cle(t) === cle(titre))) { artiste.titres = (artiste.titres || []).concat(titre); ecrire('quiz2-config', CONFIG); }
+    cites.push({ titre, equipe: id });
+    if (C().point_par_titre) ajouterPoints(id, 1);
+    annulable = { titre, equipe: id, courant };
+    sonner([880, 1320], .1, 'triangle', .2);
+    verdict('ok', '✓ « ' + titre + ' »', [h('button', { class: 'btn mini', onclick: annuler }, 'Annuler')]);
+    majCites(); suivant(true);
+  }
+  function annuler() {
+    if (!annulable) return;
+    cites = cites.filter(c => !(c.titre === annulable.titre && c.equipe === annulable.equipe));
+    if (C().point_par_titre) ajouterPoints(annulable.equipe, -1);
+    courant = annulable.courant; annulable = null;
+    verdict('', ''); majCites(); majTours(); relancerChrono();
+  }
+  function refuser() { if (C().elimination) eliminer(); else { verdict('ko', '✗ Refusé'); suivant(true); } }
+  function eliminer() {
+    const id = idCourant(); if (!id) return;
+    elimines.add(id); bipErreur(); annulable = null;
+    verdict('ko', '✗ Équipe ' + equipe(id).nom + ' éliminée');
+    if (actifs().length <= 1) return fin();
+    suivant(true);
+  }
+  function suivant(garderVerdict) {
+    if (!actifs().length) return;
+    if (!garderVerdict) verdict('', '');
+    let i = courant;
+    for (let k = 0; k < ordre.length; k++) { i = (i + 1) % ordre.length; if (!elimines.has(ordre[i]) && equipe(ordre[i])) break; }
+    courant = i; elInput.value = ''; majTours(); relancerChrono(); elInput.focus();
+  }
+  function fin() {
+    J.quitter(); majTours();
+    const g = equipe(actifs()[0]);
+    if (!g) return;
+    const f = $('#fin-manche'); f.style.setProperty('--c', g.couleur);
+    f.firstElementChild.innerHTML = '';
+    f.firstElementChild.append('🏆 Équipe ' + g.nom, h('small', {}, cites.length + ' titres de ' + artiste.nom + ' cités · cliquez pour fermer'));
+    f.classList.add('vu'); f.onclick = () => f.classList.remove('vu');
+    sonner([523, 659, 784, 1046], .2, 'triangle', .22);
+    elEquipe.textContent = '🏆 ' + g.nom + ' remporte la manche !';
+  }
+  function relancerChrono() {
+    clearInterval(chronoTimer); chronoTimer = null; chronoPause = 0; if (elPause) elPause.textContent = '⏸ Chrono';
+    const d = Number(C().duree_tour) || 0; if (d <= 0 || !elBarre) return;
+    finChrono = Date.now() + d * 1000;
+    chronoTimer = setInterval(() => {
+      const reste = finChrono - Date.now();
+      elBarre.firstChild.style.width = Math.max(0, reste / (d * 10)) + '%';
+      if (reste <= 0) { clearInterval(chronoTimer); chronoTimer = null; tempsEcoule(); }
+    }, 100);
+  }
+  function pauseChrono(oui) {
+    if (oui && chronoTimer) { chronoPause = finChrono - Date.now(); clearInterval(chronoTimer); chronoTimer = null; elPause.textContent = '▶ Chrono'; }
+    else if (!oui && chronoPause > 0) { const d = Number(C().duree_tour); const reste = chronoPause; relancerChrono(); finChrono = Date.now() + reste; elBarre.firstChild.style.width = (reste / (d * 10)) + '%'; }
+  }
+  function basculerChrono() { pauseChrono(!!chronoTimer); }
+  function tempsEcoule() {
+    sonner([300, 200], .3, 'sawtooth', .18);
+    verdict('ko', '⏰ Temps écoulé pour ' + (equipe(idCourant()) || {}).nom + ' !', C().elimination
+      ? [h('button', { class: 'btn rouge', onclick: eliminer }, '✗ Éliminer'), h('button', { class: 'btn', onclick: () => suivant() }, 'Passer sans éliminer'), h('button', { class: 'btn', onclick: () => { verdict('', ''); relancerChrono(); } }, 'Encore du temps')]
+      : [h('button', { class: 'btn', onclick: () => suivant() }, 'Équipe suivante')]);
+  }
+  return J;
+}
+
+// ---------------- Jeu 2 : Devine la chanson (une seule équipe joue, points de manche) ----------------
+function creerDevine() {
+  const J = { id: 'devine', nom: 'Devine la chanson', icone: '🎯', pauseAuBuzz: false };
+  // idx = -1 : écran de départ sans titre
+  let idx = -1, racine = null, equipeId = null, cache = false;
+  // chrono compte à rebours (2 min par défaut), indépendant des chansons
+  let chronoT = null, fin = 0, reste = null;
+  const manche = {}, statut = {};
+  const L = () => (CONFIG.devine.titres || []).map(lireTitreArtiste).filter(c => c.titre);
+  const dureeMs = () => Math.max(1, Number(CONFIG.devine.duree) || 120) * 1000;
+  const fmtChrono = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  const resteMs = () => chronoT ? fin - Date.now() : (reste ?? dureeMs());
+  J.ouvrir = el => { racine = el; if (!equipe(equipeId)) equipeId = equipes[0] && equipes[0].id; if (idx >= L().length) idx = -1; afficher(); };
+  function majChrono() {
+    if (!racine) return;
+    const r = resteMs(), el = racine.querySelector('.chrono-devine'), b = racine.querySelector('.barre-chrono i');
+    if (el) { el.textContent = fmtChrono(r); el.classList.toggle('urgent', r <= 10000 && r > 0); }
+    if (b) b.style.width = Math.max(0, r / dureeMs() * 100) + '%';
+  }
+  function afficher() {
+    if (!racine || jeuCourant !== J) return;
+    racine.innerHTML = '';
+    const liste = L(), c = idx >= 0 ? liste[idx] : null, eq = equipe(equipeId);
+    racine.append(h('div', { class: 'entete-jeu' }, h('h2', {}, '🎯 Devine la chanson'),
+      h('div', { class: 'pastilles', style: 'align-items:center' }, h('span', { class: 'note' }, 'Équipe qui joue :'),
+        equipes.map(e => h('button', { class: 'tour' + (e.id === equipeId ? ' courant' : ''), style: '--c:' + e.couleur + ';cursor:pointer;background:' + (e.id === equipeId ? e.couleur : 'transparent'), onclick: () => { equipeId = e.id; afficher(); } }, e.nom + ' · ' + (manche[e.id] || 0) + ' pt' + ((manche[e.id] || 0) > 1 ? 's' : ''))))));
+    if (!liste.length) { racine.append(vide()); return; }
+    const trouves = Object.values(statut).filter(v => v === 'ok').length;
+    racine.append(
+      h('div', { style: 'display:flex;align-items:center;gap:20px' },
+        h('div', { class: 'equipe-courante', style: 'flex:1;text-align:left;font-size:34px;--c:' + (eq ? eq.couleur : '#fff') }, eq ? 'Équipe ' + eq.nom + ' : ' + (manche[eq.id] || 0) + ' point' + ((manche[eq.id] || 0) > 1 ? 's' : '') : ''),
+        h('div', { class: 'chrono-devine' }, fmtChrono(resteMs())),
+        h('button', { class: 'btn gros', onclick: basculerChrono }, chronoT ? '⏸ Pause' : (reste != null && reste < dureeMs() && reste > 0 ? '▶ Reprendre' : '⏱ Lancer le chrono')),
+        h('button', { class: 'btn gros', onclick: remettreChrono, title: 'Remet le chrono à ' + fmtChrono(dureeMs()) }, '↺ Chrono')),
+      h('div', { class: 'barre-chrono' }, h('i', { style: 'width:' + Math.max(0, resteMs() / dureeMs() * 100) + '%' })),
+      h('div', { class: 'carte', style: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:240px' },
+        idx < 0
+          ? [h('div', { class: 'grand-message' }, '🎯 Prêts ?'), h('div', { class: 'note', style: 'font-size:18px' }, 'Lancez le chrono, puis flèche → (ou ✓) pour afficher la 1re chanson.')]
+          : [h('span', { class: 'num-chanson' }, 'Chanson ' + (idx + 1) + ' / ' + liste.length + (statut[idx] === 'ok' ? ' · ✓ trouvée' : statut[idx] === 'passe' ? ' · passée' : '')),
+             cache ? h('div', { class: 'grand-message' }, '🙈') : h('div', { class: 'reponse apparait' }, h('div', { class: 't', style: 'font-size:64px' }, c.titre), c.artiste ? h('div', { class: 'a' }, c.artiste) : null),
+             h('div', { class: 'note' }, trouves + ' trouvée' + (trouves > 1 ? 's' : '') + ' sur ' + liste.length)]),
+      h('div', { class: 'commandes' },
+        h('button', { class: 'btn', onclick: () => J.nav(-1) }, '◀'),
+        h('button', { class: 'btn vert gros', onclick: trouve }, idx < 0 ? '▶ 1re chanson' : '✓ OK +1', h('kbd', {}, '→')),
+        h('button', { class: 'btn rouge gros', onclick: passer, disabled: idx < 0 }, '✗ Passer', h('kbd', {}, '↓')),
+        h('button', { class: 'btn', onclick: () => { cache = !cache; afficher(); } }, cache ? '👁 Afficher le titre' : '🙈 Masquer le titre'),
+        h('button', { class: 'btn', onclick: versScore, title: 'Ajoute les points de manche de cette équipe au score général' }, '➕ Au score général'),
+        h('button', { class: 'btn', onclick: () => { if (confirm('Nouvelle manche : points de manche à zéro et retour à l’écran de départ ?')) { for (const k in manche) delete manche[k]; for (const k in statut) delete statut[k]; idx = -1; afficher(); } } }, '↺ Nouvelle manche')));
+  }
+  // depuis l'écran de départ, → affiche la 1re chanson sans donner de point
+  function trouve() { if (!L().length) return; if (idx < 0) { idx = 0; return afficher(); } if (!equipeId) return; manche[equipeId] = (manche[equipeId] || 0) + 1; statut[idx] = 'ok'; sonner([880, 1320], .1, 'triangle', .2); suivante(); }
+  function passer() { if (!L().length || idx < 0) return; statut[idx] = 'passe'; suivante(); }
+  function suivante() { idx = (idx + 1) % L().length; afficher(); }
+  function versScore() { const p = manche[equipeId] || 0; if (!p) return toast('Pas encore de point dans la manche pour cette équipe.'); ajouterPoints(equipeId, p); toast(p + ' point(s) ajouté(s) au score de l’équipe ' + equipe(equipeId).nom); manche[equipeId] = 0; afficher(); }
+  function basculerChrono() {
+    if (chronoT) { reste = fin - Date.now(); clearInterval(chronoT); chronoT = null; return afficher(); }
+    const r = reste != null && reste > 0 ? reste : dureeMs();
+    fin = Date.now() + r; reste = null;
+    chronoT = setInterval(() => {
+      majChrono();
+      if (fin - Date.now() <= 0) { clearInterval(chronoT); chronoT = null; reste = 0; sonner([300, 200, 150], .35, 'sawtooth', .22); toast('⏰ Temps écoulé !'); afficher(); }
+    }, 200);
+    afficher();
+  }
+  function remettreChrono() { clearInterval(chronoT); chronoT = null; reste = null; afficher(); }
+  J.touche = k => { if (k === 't') trouve(); if (k === 'p') passer(); };
+  // → : trouvé (+1 point de manche) et chanson suivante · ↓ : passer (0 point) · ← : chanson précédente
+  J.clavier = key => { if (key === 'ArrowRight') { trouve(); return true; } if (key === 'ArrowDown') { passer(); return true; } if (key === 'ArrowLeft') { J.nav(-1); return true; } return false; };
+  J.nav = d => { const n = L().length; if (!n) return; idx = idx < 0 ? (d > 0 ? 0 : -1) : idx + d; if (idx >= n) idx = 0; if (idx < -1) idx = -1; afficher(); };
+  return J;
+}
+
+// ---------------- Jeu 4 : À côté de la plaque (une musique avec les paroles d'une autre chanson) ----------------
+function creerPlaque() {
+  const J = { id: 'plaque', nom: 'À côté de la plaque', icone: '🙃' };
+  let idx = 0, racine, vue = null, cache = true;   // titres masqués à chaque nouvelles paroles
+  const faits = new Set();
+  const L = () => CONFIG.plaque.chansons || [];
+  J.ouvrir = el => { racine = el; idx = Math.min(idx, Math.max(0, L().length - 1)); cache = true; afficher(); };
+  async function afficher() {
+    racine.innerHTML = ''; vue = null;
+    racine.append(enTete('🙃 À côté de la plaque', L(), idx, i => { idx = i; cache = true; afficher(); }, faits));
+    const c = L()[idx]; if (!c) { racine.append(vide()); return; }
+    const n0 = idx;
+    const txt = String(c.paroles || '').trim() || await FichiersParoles.lire(c.titre_paroles);
+    if (n0 !== idx) return;
+    // les deux chansons, avec leurs auteurs, affichées en haut
+    const ligne = (ico, lib, t, a) => h('div', { style: 'display:flex;gap:12px;align-items:baseline;justify-content:center;flex-wrap:wrap' },
+      h('span', { class: 'a', style: 'font-size:20px;color:var(--doux)' }, ico + ' ' + lib),
+      h('span', { class: 't', style: 'font-family:var(--titre);font-weight:700;font-size:32px' }, '« ' + (t || '?') + ' »'),
+      a ? h('span', { style: 'font-size:22px;color:var(--doux)' }, '— ' + a) : null);
+    racine.append(h('div', { style: 'display:flex;align-items:center;gap:14px' }, h('span', { class: 'num-chanson' }, 'N° ' + (idx + 1)),
+      cache ? h('span', { class: 'note', style: 'font-size:18px' }, 'Quelle est la musique ? Et d’où viennent ces paroles ?') :
+      h('div', { style: 'flex:1;display:flex;flex-direction:column;gap:4px' }, ligne('🎵', 'Musique :', c.titre_musique, c.artiste_musique), ligne('📝', 'Paroles :', c.titre_paroles, c.artiste_paroles))));
+    const carte = h('div', { class: 'carte', style: 'flex:1;display:flex;flex-direction:column;justify-content:safe center;min-height:240px;overflow:hidden' });
+    if (txt) { vue = vueParoles(txt); carte.append(vue.el); }
+    else carte.append(h('div', { class: 'vide' }, 'Pas encore de paroles : ajoutez le fichier ', h('b', {}, 'paroles/' + nomFichierParoles(c.titre_paroles || '')), ' ou collez-les dans ✏️ Préparer.'));
+    racine.append(carte, h('div', { class: 'commandes' },
+      h('button', { class: 'btn', onclick: () => J.nav(-1) }, '◀'),
+      h('button', { class: 'btn gros', onclick: () => { cache = !cache; afficher(); } }, cache ? '👁 Afficher les chansons' : '🙈 Masquer les chansons'),
+      h('button', { class: 'btn gros', onclick: () => { faits.add(idx); J.nav(1); } }, 'Suivant ▶')));
+  }
+  J.ligne = d => { if (vue) vue.ligne(d); };
+  J.surBonne = () => { if (cache) { cache = false; afficher(); } };
+  J.nav = d => { const n = L().length; if (!n) return; idx = (idx + d + n) % n; cache = true; afficher(); };
+  return J;
+}
+
+// ---------------- Jeu 5 : Blind test par catégorie ----------------
+function creerBlindCat() {
+  const J = { id: 'blindcat', nom: 'Blind test', icone: '🎧' };
+  let cat = -1, idx = 0, racine, revele = false, disque, eq, zoneRep;
+  const faits = {};
+  const C = () => CONFIG.blindcat.categories || [];
+  const L = () => cat < 0 || !C()[cat] ? [] : (C()[cat].titres || []).map(lireTitreArtiste).filter(c => c.titre);
+  J.ouvrir = el => { racine = el; if (cat >= C().length) cat = -1; cat < 0 ? choix() : afficher(); };
+  function choix() {
+    Lecteur.stop(); cat = -1; racine.innerHTML = '';
+    racine.append(h('div', { class: 'entete-jeu' }, h('h2', {}, '🎧 Blind test')), h('p', { class: 'note', style: 'margin:0' }, 'Choisissez la catégorie.'));
+    if (!C().length) { racine.append(vide()); return; }
+    racine.append(h('div', { class: 'artistes' }, C().map((k, i) => h('button', { class: 'artiste', onclick: () => { cat = i; idx = 0; afficher(); } },
+      h('span', { style: 'font-size:48px;display:block' }, k.icone || '🎧'), h('b', {}, k.nom), h('span', {}, ((k.titres || []).length) + ' extraits' + (faits[i] && faits[i].size ? ' · ' + faits[i].size + ' joués' : ''))))));
+  }
+  function afficher() {
+    Lecteur.stop(); racine.innerHTML = ''; revele = false; modeRec = false; karaVue = null;
+    const k = C()[cat]; faits[cat] = faits[cat] || new Set();
+    racine.append(h('div', { class: 'entete-jeu' }, h('h2', {}, (k.icone || '🎧') + ' Blind test – ' + k.nom),
+      h('div', { class: 'pastilles' }, h('button', { class: 'btn', onclick: choix }, '↩ Changer de catégorie'))));
+    const c = L()[idx]; if (!c) { racine.append(vide()); return; }
+    disque = h('div', { class: 'disque' }); eq = h('div', { class: 'egaliseur' }, Array.from({ length: 9 }, () => h('i')));
+    zoneRep = h('div', { style: 'min-height:110px;text-align:center' }, h('span', { class: 'num-chanson' }, 'Extrait n° ' + (idx + 1) + ' / ' + L().length));
+    racine.append(h('div', { class: 'disque-zone' }, disque, eq), zoneRep,
+      h('div', { class: 'commandes' },
+        h('button', { class: 'btn', onclick: () => J.nav(-1) }, '◀'),
+        h('button', { class: 'btn plein gros', onclick: () => Lecteur.lancerChanson(c) }, '▶ Lancer l’extrait'),
+        h('button', { class: 'btn gros', onclick: reveler }, '🎉 Révéler'),
+        h('button', { class: 'btn gros', onclick: () => J.nav(1) }, 'Suivant ▶')));
+  }
+  // ---- révélation : titre, chanson relancée depuis le début, paroles en karaoké
+  let zoneKara = null, karaVue = null, karaTemps = null, karaParoles = '', modeRec = false, rec = [], recIdx = -1;
+  async function reveler() {
+    const c = L()[idx]; if (!c || revele) return; revele = true; faits[cat].add(idx);
+    zoneRep.innerHTML = ''; zoneRep.append(blocReponse(c)); zoneRep.style.minHeight = '0'; zoneRep.style.flexShrink = '0';
+    const dz = racine.querySelector('.disque-zone'); if (dz) dz.style.display = 'none';
+    zoneKara = h('div', { style: 'display:flex;flex-direction:column;align-items:center;gap:10px;width:100%' });
+    zoneRep.after(zoneKara);
+    const ici = cat + ':' + idx, p = await FichiersParoles.pourKaraoke(c); if (!revele || cat + ':' + idx !== ici) return;
+    karaParoles = p.paroles || '';
+    karaTemps = Synchro.lire(c) || ((p.tempsFichier || []).filter(t => t != null).length >= 2 ? p.tempsFichier : null);
+    Lecteur.stop(); await Lecteur.lancerChanson({ ...c, debut: 0 });
+    renduKara();
+  }
+  function renduKara() {
+    const c = L()[idx]; zoneKara.innerHTML = ''; karaVue = null;
+    if (!karaParoles) { zoneKara.append(h('p', { class: 'note' }, 'Pas de paroles : collez-les dans paroles/' + nomFichierParoles(c.titre) + ' pour les voir défiler ici.')); return; }
+    const cmd = h('div', { class: 'commandes' });
+    if (modeRec) {
+      zoneKara.append(h('div', { class: 'note', style: 'font-size:17px' }, '⏺ Synchronisation : appuyez sur ', h('kbd', {}, 'Espace'), ' (ou ↓) au moment où chaque ligne commence · ↑ annule la dernière'));
+      karaVue = vueKaraoke(karaParoles); zoneKara.append(karaVue.el); karaVue.aller(recIdx, true);
+      cmd.append(h('button', { class: 'btn vert gros', onclick: finRec }, '✓ Terminer et enregistrer'), h('button', { class: 'btn gros', onclick: () => { modeRec = false; Lecteur.stop(); renduKara(); } }, '✗ Annuler'));
+    } else if (karaTemps) {
+      karaVue = vueKaraoke(karaParoles); zoneKara.append(karaVue.el);
+      cmd.append(h('button', { class: 'btn', onclick: debutRec }, '⏺ Refaire la synchronisation'),
+        h('button', { class: 'btn', onclick: () => Synchro.copier(karaParoles, karaTemps, c) }, '📋 Copier les paroles synchronisées'));
+    } else {
+      zoneKara.append(vueParoles(karaParoles));
+      cmd.append(h('span', { class: 'note' }, 'Paroles pas encore synchronisées :'), h('button', { class: 'btn', onclick: debutRec }, '⏺ Synchroniser les paroles'));
+    }
+    const v = zoneKara.querySelector('.paroles-vue'); if (v) v.style.fontSize = 'clamp(14px, calc((100vh - 470px) / 14), 30px)';
+    zoneKara.append(cmd);
+  }
+  async function debutRec() { modeRec = true; rec = []; recIdx = -1; Lecteur.stop(); await Lecteur.lancerChanson({ ...L()[idx], debut: 0 }); renduKara(); }
+  function finRec() {
+    const c = L()[idx], n = karaParoles.split('\n').filter(l => l.trim()).length;
+    const tps = Array.from({ length: n }, (_, k) => rec[k] ?? null);
+    modeRec = false;
+    if (tps.filter(t => t != null).length < 2) { toast('Pas assez de lignes marquées.'); return renduKara(); }
+    karaTemps = tps; Synchro.sauver(c, tps); toast('Synchronisation enregistrée ✓');
+    Lecteur.stop(); Lecteur.lancerChanson({ ...c, debut: 0 }); renduKara();
+  }
+  J.clavier = key => {
+    if (!modeRec || !karaVue) return false;
+    if (key === ' ' || key === 'ArrowDown') { if (recIdx + 1 < karaVue.n) { recIdx++; rec[recIdx] = Math.round(Lecteur.temps() * 100) / 100; karaVue.aller(recIdx, true); } return true; }
+    if (key === 'ArrowUp') { if (recIdx >= 0) { rec[recIdx] = undefined; recIdx--; karaVue.aller(recIdx, true); } return true; }
+    return false;
+  };
+  J.tic = t => {
+    const joue = Lecteur.enCours() && (!!audio.src || !!Lecteur.virt); disque && disque.classList.toggle('tourne', joue); eq && eq.classList.toggle('actif', joue);
+    if (revele && !modeRec && karaVue && karaTemps) karaVue.suivre(t, karaTemps);
+  };
+  J.quitter = () => { modeRec = false; };
+  J.surBonne = (_, reprendre) => { if (!revele) reveler(); else if (reprendre) Lecteur.reprendre(); };
+  J.nav = d => { const n = L().length; if (!n) return; idx = (idx + d + n) % n; afficher(); };
+  return J;
+}
+
+// =====================================================================
+//  Navigation entre les jeux
+// =====================================================================
+const JEUX = [creerNuage(), creerDevine(), creerKaraoke(), creerPlaque(), creerBlindCat()];
+function renduCategories() {
+  const box = $('#liste-cats'); box.innerHTML = '';
+  JEUX.forEach((j, i) => box.append(h('button', { class: 'cat' + (jeuCourant === j ? ' active' : ''), style: 'width:100%', onclick: () => choisirJeu(j.id) },
+    h('span', { class: 'ico' }, j.icone), h('span', {}, h('div', { class: 'num' }, 'Jeu ' + (i + 1)), h('div', { class: 'lib' }, j.nom)))));
+}
+function choisirJeu(id) {
+  if (jeuCourant && jeuCourant.quitter) jeuCourant.quitter();
+  Lecteur.stop();
+  jeuCourant = JEUX.find(j => j.id === id) || JEUX[0];
+  ecrire('quiz2-jeu', jeuCourant.id);
+  document.body.classList.toggle('jeu-paroles', ['nuage', 'devine', 'karaoke', 'plaque'].includes(jeuCourant.id));
+  $('#jeu').innerHTML = '';
+  jeuCourant.ouvrir($('#jeu'));
+  renduCategories();
+}
+
+// =====================================================================
+//  Écran d'accueil : les 5 jeux
+// =====================================================================
+const DESCRIPTIONS = { nuage: 'Les mots des paroles apparaissent… trouvez la chanson\u00a0!', devine: 'Une équipe, un max de chansons à deviner\u00a0!',
+  karaoke: 'Des mots ont disparu\u00a0: chantez-les\u00a0!', plaque: 'La musique d’une chanson, les paroles d’une autre\u00a0: trouvez les deux\u00a0!', blindcat: 'Séries TV, rap, chanson française, titres 2024-2026\u00a0!' };
+function afficherAccueil() {
+  const box = $('#jeux-accueil'); box.innerHTML = '';
+  JEUX.forEach((j, i) => box.append(h('button', { class: 'carte-jeu', onclick: () => { fermerAccueil(); choisirJeu(j.id); } },
+    h('span', { class: 'num' }, 'JEU ' + (i + 1)), h('span', { class: 'ico' }, j.icone), h('span', { class: 'lib' }, j.nom), h('span', { class: 'desc' }, DESCRIPTIONS[j.id] || ''))));
+  $('#accueil').classList.add('vu');
+}
+function fermerAccueil() { $('#accueil').classList.remove('vu'); }
+$('#btn-accueil').onclick = afficherAccueil;
+$('#logo').onclick = afficherAccueil;
+$('#logo').title = 'Écran d’accueil';
+
+// =====================================================================
+//  Fenêtre « Équipes »
+// =====================================================================
+const COULEURS = ['#ff3b5c', '#2f8cff', '#22d36b', '#ffd21f', '#b25cff', '#ff8a1f', '#1fe0d4', '#ff6fd8', '#ffffff', '#8bc34a'];
+let brouillonEquipes = [];
+function ouvrirEquipes() { brouillonEquipes = equipes.map(e => ({ ...e })); renduEquipesEd(); ouvrirModale('modale-equipes'); }
+function renduEquipesEd() {
+  const box = $('#liste-equipes-ed'); box.innerHTML = '';
+  brouillonEquipes.forEach((e, i) => box.append(h('div', { style: 'display:flex;gap:8px;align-items:center' },
+    h('input', { type: 'color', value: e.couleur, oninput: ev => e.couleur = ev.target.value, style: 'width:46px;height:40px;border:0;background:none' }),
+    h('div', { class: 'champ', style: 'flex:1' }, h('input', { value: e.nom, maxlength: 20, oninput: ev => e.nom = ev.target.value })),
+    h('span', { class: 'note' }, e.score + ' pts'),
+    h('button', { class: 'btn mini', disabled: i === 0, onclick: () => { [brouillonEquipes[i - 1], brouillonEquipes[i]] = [brouillonEquipes[i], brouillonEquipes[i - 1]]; renduEquipesEd(); } }, '↑'),
+    h('button', { class: 'btn mini', disabled: brouillonEquipes.length <= 2, onclick: () => { brouillonEquipes.splice(i, 1); renduEquipesEd(); } }, '🗑'))));
+}
+$('#btn-equipes').onclick = ouvrirEquipes;
+$('#btn-ajout-equipe').onclick = () => {
+  if (brouillonEquipes.length >= 10) return;
+  const c = COULEURS.find(c => !brouillonEquipes.some(e => e.couleur === c)) || '#888888';
+  brouillonEquipes.push({ id: 'eq' + Date.now().toString(36), nom: 'Équipe ' + (brouillonEquipes.length + 1), couleur: c, score: 0 }); renduEquipesEd();
+};
+$('#btn-zero').onclick = () => { if (confirm('Remettre tous les scores à zéro ?')) { brouillonEquipes.forEach(e => e.score = 0); renduEquipesEd(); } };
+$('#btn-valider-equipes').onclick = () => {
+  equipes = brouillonEquipes.map(e => ({ ...e, nom: e.nom.trim() || 'Équipe' }));
+  sauverEquipes(); rearmer(); renduScores(); fermerModale('modale-equipes');
+};
+
+// =====================================================================
+//  Fenêtre « Préparer les jeux »
+// =====================================================================
+const C_TITRE = { k: 'titre', l: 'Titre (la réponse)', t: 'texte', c: 'demi' }, C_ART = { k: 'artiste', l: 'Artiste', t: 'texte', c: 'demi' };
+const C_FICH = { k: 'fichier', l: 'Fichier audio', t: 'fichier', c: 'demi' }, C_DEB = { k: 'debut', l: 'Départ (s)', t: 'temps' };
+const SCHEMA = {
+  nuage: { nom: '☁️ Jeu 1 – Nuage de mots', note: 'Les mots du nuage sont ceux de la liste « Mots du nuage » de chaque chanson (un par ligne, 20 maximum par défaut), dans l’ordre saisi. Le bouton ✨ remplit cette liste avec les mots significatifs des paroles (sans les petits mots, ni le titre, ni l’artiste) ; vous pouvez ensuite la retoucher. Une fois le nuage terminé, les paroles de la chanson (fichier du dossier « paroles ») s’affichent.',
+    reglages: [{ k: 'intervalle', l: 'Secondes entre deux mots', t: 'nombre' }, { k: 'max_mots', l: 'Nombre de mots maximum', t: 'nombre' }, { k: 'aleatoire', l: 'Mots dans un ordre aléatoire', t: 'case' }, { k: 'depuis_paroles', l: 'Prendre plutôt les mots dans les paroles', t: 'case' }, { k: 'chansons_aleatoires', l: 'Chansons dans un ordre aléatoire', t: 'case' }],
+    champs: [C_TITRE, C_ART, C_FICH, C_DEB, { k: 'mots', l: 'Mots du nuage (un par ligne, ou séparés par des virgules)', t: 'zone', c: 'large' }] },
+  devine: { nom: '🎯 Jeu 2 – Devine la chanson', note: 'Une seule équipe joue. L’animateur fait défiler les chansons une par une : flèche → (ou ✓ OK) = 1 point de manche et chanson suivante, flèche ↓ (ou ✗ Passer) = chanson suivante sans point. Les points de manche peuvent être ajoutés au score général avec « ➕ Au score général ».', sansListe: true,
+    reglages: [{ k: 'duree', l: 'Durée du chrono (secondes, 120 = 2 minutes)', t: 'nombre' }, { k: 'titres', l: 'Chansons à deviner : une par ligne, « Titre — Artiste »', t: 'lignes', c: 'large' }], champs: [] },
+  karaoke: { nom: '🎤 Jeu 3 – N’oubliez pas les paroles', note: 'Laissez les paroles vides pour utiliser le fichier du dossier « paroles » sur le serveur (nom indiqué sous chaque chanson). Sinon, collez les paroles complètes. Vers le mot n° indiqué (50 par défaut, calé sur un début de ligne), 7 ou 8 mots sont remplacés par des ____ : c’est le passage que les équipes doivent chanter. Le son se coupe au temps « Coupure » pendant la durée choisie (la chanson continue en silence), puis revient.',
+    champs: [C_TITRE, C_ART, C_FICH, C_DEB, { k: 'coupure', l: 'Coupure du son à (s)', t: 'temps' }, { k: 'duree', l: 'Durée de la coupure (s)', t: 'nombre' }, { k: 'trou_debut', l: 'Le trou commence vers le mot n°', t: 'nombre' }, { k: 'trou_nb', l: 'Mots cachés (0 = 7 ou 8 au hasard)', t: 'nombre' }, { k: 'paroles', l: 'Paroles de la chanson', t: 'zone', c: 'large' }] },
+  plaque: { nom: '🙃 Jeu 4 – À côté de la plaque', note: 'Pour chaque manche : la musique que l’on joue et la chanson dont on affiche les paroles. Laissez les paroles vides pour utiliser le fichier paroles/<titre des paroles>.txt sur le serveur.',
+    champs: [{ k: 'titre_musique', l: 'Musique jouée : titre', t: 'texte', c: 'demi' }, { k: 'artiste_musique', l: 'Musique jouée : artiste', t: 'texte', c: 'demi' }, { k: 'titre_paroles', l: 'Paroles affichées : titre', t: 'texte', c: 'demi' }, { k: 'artiste_paroles', l: 'Paroles affichées : artiste', t: 'texte', c: 'demi' }, { k: 'paroles', l: 'Paroles affichées (facultatif)', t: 'zone', c: 'large' }] },
+  blindcat: { nom: '🎧 Jeu 5 – Blind test', note: 'Une catégorie par bloc. Extraits : une ligne par chanson, « Titre — Artiste ». La musique est jouée à part (ou depuis le dossier musique si un fichier porte le titre).', liste: 'categories',
+    champs: [{ k: 'nom', l: 'Catégorie', t: 'texte', c: 'demi' }, { k: 'icone', l: 'Icône', t: 'texte' }, { k: 'titres', l: 'Extraits (un par ligne : Titre — Artiste)', t: 'lignes', c: 'large' }] }
+};
+let brouillon = null, ongletEd = 'nuage';
+const apercu = $('#audio-apercu');
+function ouvrirEditeur() { brouillon = JSON.parse(JSON.stringify(CONFIG)); if (jeuCourant && SCHEMA[jeuCourant.id]) ongletEd = jeuCourant.id; renduEditeur(); ouvrirModale('editeur'); }
+$('#btn-preparer').onclick = ouvrirEditeur;
+function renduEditeur() {
+  if (!brouillon) return;
+  const ong = $('#ed-onglets'); ong.innerHTML = '';
+  Object.entries(SCHEMA).forEach(([id, s]) => ong.append(h('button', { class: 'cat' + (id === ongletEd ? ' active' : ''), onclick: () => { ongletEd = id; renduEditeur(); } }, h('span', { class: 'lib', style: 'font-size:15px' }, s.nom))));
+  if (!SCHEMA[ongletEd]) ongletEd = 'nuage';
+  const s = SCHEMA[ongletEd], d = brouillon[ongletEd] = brouillon[ongletEd] || JSON.parse(JSON.stringify(CONFIG_DEFAUT[ongletEd])), cleListe = s.liste || 'chansons';
+  d[cleListe] = d[cleListe] || [];
+  const box = $('#ed-contenu'); box.innerHTML = '';
+  box.append(h('p', { class: 'note', style: 'margin:0' }, s.note));
+  if (s.champs.some(c => c.t === 'fichier') && !Musique.fichiers.size)
+    box.append(h('div', { class: 'carte', style: 'padding:12px' }, '📁 Chargez d’abord votre dossier de musiques pour choisir les fichiers. ', h('button', { class: 'btn mini', onclick: () => Musique.choisir() }, 'Choisir le dossier')));
+  if (s.reglages) box.append(h('div', { class: 'ed-reglages', style: s.sansListe ? 'flex-direction:column;align-items:stretch' : '' }, s.reglages.map(r => champ(r, d))));
+  if (ongletEd === 'nuage') box.append(h('div', {}, h('button', { class: 'btn', onclick: async () => {
+    let n = 0; for (const it of d.chansons || []) if (await remplirMotsNuage(it, false)) n++;
+    toast(n ? n + ' liste(s) remplie(s) avec les mots des paroles. Relisez-les, puis Enregistrer.' : 'Aucun fichier de paroles trouvé : déposez d’abord le dossier « paroles » sur le serveur.');
+    renduEditeur();
+  } }, '✨ Remplir toutes les listes avec les mots significatifs des paroles')));
+  if (s.sansListe) return;
+  d[cleListe].forEach((item, i) => {
+    const libelle = item.titre || item.nom || (item.titre_musique ? item.titre_musique + ' / ' + (item.titre_paroles || '?') : '') || '(sans titre)';
+    box.append(h('div', { class: 'ed-item' },
+      h('div', { class: 'ed-item-tete' }, h('b', {}, (i + 1) + '. ' + libelle),
+        h('button', { class: 'btn mini', disabled: i === 0, onclick: () => { [d[cleListe][i - 1], d[cleListe][i]] = [d[cleListe][i], d[cleListe][i - 1]]; renduEditeur(); } }, '↑'),
+        h('button', { class: 'btn mini', disabled: i === d[cleListe].length - 1, onclick: () => { [d[cleListe][i + 1], d[cleListe][i]] = [d[cleListe][i], d[cleListe][i + 1]]; renduEditeur(); } }, '↓'),
+        h('button', { class: 'btn mini', onclick: () => { if (confirm('Supprimer « ' + libelle + ' » ?')) { d[cleListe].splice(i, 1); renduEditeur(); } } }, '🗑')),
+      (ongletEd === 'karaoke' || ongletEd === 'nuage' || ongletEd === 'plaque') ? h('div', { class: 'note large' }, '📄 Fichier lu si les paroles sont vides : paroles/' + nomFichierParoles(ongletEd === 'plaque' ? item.titre_paroles : item.titre)) : null,
+      ongletEd === 'nuage' ? h('div', { class: 'large', style: 'display:flex;gap:8px;align-items:center' },
+        h('button', { class: 'btn mini', type: 'button', onclick: async e => { e.preventDefault(); await remplirMotsNuage(item, true); renduEditeur(); } }, '✨ Remplir « Mots du nuage » avec les mots significatifs des paroles'),
+        h('span', { class: 'note' }, 'lit paroles/' + nomFichierParoles(item.titre) + ' sur le serveur ; vous pouvez ensuite modifier la liste')) : null,
+      s.champs.map(c => champ(c, item))));
+  });
+  box.append(h('button', { class: 'btn', style: 'align-self:flex-start', onclick: () => {
+    const n = {}; s.champs.forEach(c => n[c.k] = c.t === 'lignes' ? [] : (c.t === 'temps' || c.t === 'nombre') ? (c.k === 'duree' ? 8 : 0) : '');
+    d[cleListe].push(n); renduEditeur(); box.scrollTop = box.scrollHeight;
+  } }, ongletEd === 'blindcat' ? '+ Ajouter une catégorie' : ongletEd === 'plaque' ? '+ Ajouter une manche' : '+ Ajouter une chanson'));
+}
+// lit le fichier de paroles et met les mots significatifs dans la liste « Mots du nuage »
+async function remplirMotsNuage(item, avecMessage) {
+  const txt = await FichiersParoles.lire(item.titre);
+  if (!txt) { if (avecMessage) toast('Fichier introuvable ou vide : paroles/' + nomFichierParoles(item.titre)); return false; }
+  const max = Math.max(1, Number(brouillon.nuage.max_mots) || 20);
+  item.mots = choisirMotsNuage(txt, item, max).map(m => m.mot).join('\n');
+  if (avecMessage) toast('Liste remplie avec ' + item.mots.split('\n').length + ' mots des paroles : relisez-la et modifiez-la si besoin.');
+  return true;
+}
+function champ(c, obj) {
+  const lab = h('label', { class: 'champ ' + (c.c || '') }, c.l);
+  if (c.t === 'case') return h('label', { class: 'case' }, h('input', { type: 'checkbox', checked: !!obj[c.k], onchange: e => obj[c.k] = e.target.checked }), c.l);
+  if (c.t === 'zone') lab.append(h('textarea', { style: c.k === 'paroles' ? 'min-height:220px' : '', value: obj[c.k] || '', oninput: e => obj[c.k] = e.target.value }));
+  else if (c.t === 'zone-temps') {
+    const ta = h('textarea', { style: 'min-height:200px', value: obj[c.k] || (c.k === 'paragraphes' ? (obj.avant || '') : ''), oninput: e => obj[c.k] = e.target.value });
+    lab.append(ta, h('div', { style: 'display:flex;gap:6px' }, h('button', { class: 'btn mini', type: 'button', onclick: e => {
+      e.preventDefault(); if (!apercu.src) return toast('Lancez d’abord l’écoute (▶ à côté du fichier).');
+      const t = apercu.currentTime, tag = '[' + Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '] ';
+      const pos = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos); obj[c.k] = ta.value; ta.focus(); ta.selectionStart = ta.selectionEnd = pos + tag.length;
+    } }, '⏱ Insérer le temps de l’écoute ici'), h('span', { class: 'note' }, (decouperParagraphes({ paragraphes: obj[c.k] || obj.avant }).length) + ' paragraphe(s)')));
+  }
+  else if (c.t === 'lignes') lab.append(h('textarea', { style: 'min-height:120px', value: (obj[c.k] || []).join('\n'), oninput: e => obj[c.k] = e.target.value.split('\n').map(s => s.trim()).filter(Boolean) }));
+  else if (c.t === 'nombre') lab.append(h('input', { type: 'number', min: 0, step: 'any', value: obj[c.k] ?? '', oninput: e => obj[c.k] = Number(e.target.value) }));
+  else if (c.t === 'temps') {
+    const inp = h('input', { type: 'number', min: 0, step: .1, value: obj[c.k] ?? 0, oninput: e => obj[c.k] = Number(e.target.value) });
+    lab.append(h('div', { class: 'avec-bouton' }, inp, h('button', { class: 'btn mini', type: 'button', title: 'Prendre le temps de l’écoute en cours', onclick: e => {
+      e.preventDefault(); if (!apercu.src) return toast('Lancez d’abord l’écoute (▶ à côté du fichier).');
+      obj[c.k] = Math.round(apercu.currentTime * 10) / 10; inp.value = obj[c.k];
+    } }, '⏱')));
+  } else if (c.t === 'fichier') {
+    const liste = Musique.liste(); const val = obj[c.k] || '';
+    const sel = h('select', { onchange: e => obj[c.k] = e.target.value },
+      h('option', { value: '' }, '— aucun —'),
+      val && !Musique.trouver(val) ? h('option', { value: val, selected: true }, '⚠ ' + val + ' (introuvable)') : null,
+      liste.map(f => h('option', { value: f, selected: Musique.trouver(val) === f }, f)));
+    lab.append(h('div', { class: 'avec-bouton' }, sel, h('button', { class: 'btn mini', type: 'button', title: 'Écouter', onclick: e => {
+      e.preventDefault(); const u = Musique.url(obj[c.k]); if (!u) return toast('Choisissez un fichier.');
+      if (apercu.dataset.f !== obj[c.k]) { apercu.src = u; apercu.dataset.f = obj[c.k]; apercu.currentTime = Number(obj.debut) || 0; }
+      $('#ap-nom').textContent = 'Écoute : ' + obj[c.k]; apercu.play();
+    } }, '▶')));
+  } else lab.append(h('input', { value: obj[c.k] || '', oninput: e => obj[c.k] = e.target.value }));
+  return lab;
+}
+$('#ap-lecture').onclick = () => { if (!apercu.src) return; apercu.paused ? apercu.play() : apercu.pause(); };
+apercu.ontimeupdate = () => { $('#ap-temps').textContent = fmt(apercu.currentTime) + ' / ' + fmt(apercu.duration); if (apercu.duration) $('#ap-prog').value = apercu.currentTime / apercu.duration * 1000; };
+apercu.onplay = apercu.onpause = () => { $('#ap-lecture').textContent = apercu.paused ? '▶' : '⏸'; };
+$('#ap-prog').oninput = e => { if (apercu.duration) apercu.currentTime = e.target.value / 1000 * apercu.duration; };
+$('#ed-dossier').onclick = () => Musique.choisir();
+$('#ed-enregistrer').onclick = () => {
+  CONFIG = brouillon; ecrire('quiz2-config', CONFIG); fermerModale('editeur');
+  if (jeuCourant) { const id = jeuCourant.id; jeuCourant = null; choisirJeu(id); }
+  toast('Préparation enregistrée ✓ (pensez à ⬇ Exporter pour garder une copie)');
+};
+$('#ed-export').onclick = () => {
+  const blob = new Blob([JSON.stringify(brouillon, null, 2)], { type: 'application/json' });
+  const a = h('a', { href: URL.createObjectURL(blob), download: 'quiz-musical-preparation.json' }); document.body.append(a); a.click(); a.remove();
+};
+$('#ed-import').onclick = () => $('#input-import').click();
+$('#input-import').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { const d = JSON.parse(await f.text()); for (const k of Object.keys(CONFIG_DEFAUT)) if (!d[k]) d[k] = brouillon[k]; brouillon = d; renduEditeur(); toast('Préparation importée : cliquez sur Enregistrer pour l’utiliser.'); }
+  catch (_) { toast('Ce fichier n’est pas une préparation valide.'); }
+};
+
+// =====================================================================
+//  Boutons et clavier
+// =====================================================================
+$('#btn-rearmer').onclick = rearmer;
+$('#etat-buzz').onclick = () => { buzz.ouvert = !buzz.ouvert; majBuzz(); };
+$('#btn-bonne').onclick = bonneReponse;
+$('#btn-mauvaise').onclick = mauvaiseReponse;
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select') || document.querySelector('.modale.ouverte') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (jeuCourant && jeuCourant.clavier && jeuCourant.clavier(e.key)) { e.preventDefault(); return; }
+  const k = e.key.toLowerCase();
+  if (e.code === 'Space') { e.preventDefault(); basculerLecture(); }
+  else if (k === 'a') { $('#accueil').classList.contains('vu') ? fermerAccueil() : afficherAccueil(); }
+  else if (k === 'r') rearmer();
+  else if (k === 'b') { buzz.ouvert = !buzz.ouvert; majBuzz(); }
+  else if (k === 'v') bonneReponse();
+  else if (k === 'x') mauvaiseReponse();
+  else if ((k === 't' || k === 'p') && jeuCourant && jeuCourant.touche) jeuCourant.touche(k);
+  else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && jeuCourant && jeuCourant.ligne) { e.preventDefault(); jeuCourant.ligne(e.key === 'ArrowDown' ? 1 : -1); }
+  else if (e.key === 'ArrowRight' && jeuCourant && jeuCourant.nav) jeuCourant.nav(1);
+  else if (e.key === 'ArrowLeft' && jeuCourant && jeuCourant.nav) jeuCourant.nav(-1);
+  else if (/^Digit[1-9]$/.test(e.code)) { const eq = equipes[Number(e.code.slice(5)) - 1]; if (eq) ajouterPoints(eq.id, e.shiftKey ? -1 : 1); }
+});
+
+// =====================================================================
+//  Démarrage
+// =====================================================================
+renduScores(); majBuzz(); majMusique(); dessinerQR(); requestAnimationFrame(boucle);
+choisirJeu(lire('quiz2-jeu', 'nuage'));
+afficherAccueil();
+Musique.restaurer();
+demarrerPeer();
+window.__quiz = { recevoirBuzz, Musique, equipes: () => equipes, buzz, chercherTitre };
+</script>
+</body>
+</html>

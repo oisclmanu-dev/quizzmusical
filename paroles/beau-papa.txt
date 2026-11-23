@@ -1,0 +1,8 @@
+# Beau-papa — Vianney
+# Utilisé dans (v2) : Jeu 3 – N'oubliez pas les paroles (n° 13)
+# Collez les paroles sous ces lignes. Les lignes qui commencent par # sont ignorées.
+# Ligne vide = nouveau paragraphe.
+# Terminer les paroles : mettez [STOP] (ou [STOP 1:23] avec le temps) seul sur une ligne là où la musique s'arrête ;
+#   le paragraphe juste après [STOP] = les paroles à trouver. Facultatif : [1:05] en début de paragraphe = affichage à ce moment.
+# Karaoké : le texte entier est affiché, 7 ou 8 mots cachés vers le 50e mot ([STOP] et les temps sont ignorés).
+
