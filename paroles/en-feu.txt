@@ -3,42 +3,42 @@
 # Collez les paroles sous ces lignes. Les lignes qui commencent par # sont ignorées.
 # Ligne vide = nouveau paragraphe.
 # Karaoké : le texte entier est affiché, 7 ou 8 mots cachés vers le 50e mot ([STOP] et les temps sont ignorés).
-J'suis en feu (j'suis chaud, j'suis chaud, j'suis chaud)
-J'suis en feu (j'suis chaud, j'suis chaud, j'suis chaud)
-J'suis en feu
+[00:07.91] J'suis en feu (j'suis chaud, j'suis chaud, j'suis chaud)
+[00:10.66] J'suis en feu (j'suis chaud, j'suis chaud, j'suis chaud)
+[00:14.61] J'suis en feu
 
-Comme Zinedine Zidane face à l’équipe du Brazil
-J'suis en feu
-Ce soir tout me sourit même Monica Bellucci
-J'suis en feu
-J'ai sorti le gros gamos, ce soir j'suis le prince de la ville
-J'suis en feu
-J'ai mis mes plus beaux tissus, appelle les paparazzi
-Publicité
+[00:15.42] Comme Zinedine Zidane face à l’équipe du Brazil
+[00:19.05] J'suis en feu
+[00:20.07] Ce soir tout me sourit même Monica Bellucci
+[00:21.50] J'suis en feu
+[00:22.46] J'ai sorti le gros gamos, ce soir j'suis le prince de la ville
+[00:25.51] J'suis en feu
+[00:26.04] J'ai mis mes plus beaux tissus, appelle les paparazzi
+[00:28.22] Publicité
 
-J'suis en feu
-Ce soir je suis intouchable, je danse comme Omar Sy
-J'suis en feu
-Le sol me salue, même Michael Jackson me dit merci
-J'suis en feu
-Le DJ me fait une passe et boum dans la lucarne
-J'suis en feu
-Sors de la piste, j'te fais le grand écart de Van Damme
-J'suis en feu
+[00:28.83] J'suis en feu
+[00:29.61] Ce soir je suis intouchable, je danse comme Omar Sy
+[00:31.73] J'suis en feu
+[00:32.15] Le sol me salue, même Michael Jackson me dit merci
+[00:34.89] J'suis en feu
+[00:35.51] Le DJ me fait une passe et boum dans la lucarne
+[00:38.38] J'suis en feu
+[00:38.89] Sors de la piste, j'te fais le grand écart de Van Damme
+[00:42.11] J'suis en feu
 
-Je sens que je vais briller, ce soir je marche sur l'eau
-J'ai l'impression de planer, regarder d'un hublot
+[00:42.81] Je sens que je vais briller, ce soir je marche sur l'eau
+[00:46.42] J'ai l'impression de planer, regarder d'un hublot
 
-Si tu me croises, fais un voeu
-Publicité
+[00:49.43] Si tu me croises, fais un voeu
+[00:51.07] Publicité
 
-SI tu me parles, fais un voeu
-Si tu me touches, fais un voeu
-Car moi ce soir je suis en feu
-J'suis en feu, j'suis en feu
-Car moi ce soir je suis en feu
-J'suis en feu, j'suis en feu
-Crois moi ce soir je suis en feu
+[00:51.44] SI tu me parles, fais un voeu
+[00:52.82] Si tu me touches, fais un voeu
+[00:54.48] Car moi ce soir je suis en feu
+[00:56.24] J'suis en feu, j'suis en feu
+[00:57.52] Car moi ce soir je suis en feu
+[00:59.79] J'suis en feu, j'suis en feu
+[01:01.55] Crois moi ce soir je suis en feu
 J'suis en feu, j'suis en feu
 Crois moi ce soir je suis en feu
 J'suis en feu, j'suis en feu
